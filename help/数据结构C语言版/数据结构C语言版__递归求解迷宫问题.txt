@@ -1,0 +1,132 @@
+/*
+	数据结构C语言版  递归求解迷宫问题
+	用递归函数求解迷宫问题(求出所有解) 
+	编译环境：Dev-C++ 4.9.9.2
+	日期： 2011年2月12日
+*/
+#include<stdio.h>
+
+// 迷宫坐标位置类型
+struct PosType 
+{
+	int x; // 行值 
+	int y; // 列值 
+};
+
+#define MAXLENGTH 25 // 设迷宫的最大行列为25 
+typedef int MazeType[MAXLENGTH][MAXLENGTH]; // [行][列] 
+
+// 全局变量 
+struct PosType end;	// 迷宫终点位置 
+MazeType m;			// 迷宫数组 
+int x, y;			// 迷宫行数，列数 
+
+// 定义墙元素值为0,可通过路径为-1,通过路径为足迹 
+
+// 输出解
+void Print(int x,int y)
+{ 
+	int i,j;
+	for(i=0;i<x;i++)
+	{
+		for(j=0;j<y;j++)
+			printf("%3d",m[i][j]);
+		printf("\n");
+	}
+	printf("\n");
+}
+
+// 由当前位置cur、当前步骤curstep试探下一点
+void Try(struct PosType cur,int curstep)
+{
+	int i;
+	struct PosType next; // 下一个位置 
+	// {行增量,列增量}
+	struct PosType direc[4]={{0,1},{1,0},{0,-1},{-1,0}};
+	// 移动方向,依次为东南西北 
+	for(i=0;i<=3;i++) // 依次试探东南西北四个方向 
+	{
+		next.x=cur.x+direc[i].x;
+		next.y=cur.y+direc[i].y;
+
+		if(m[next.x][next.y] == -1) // 是通路 
+		{
+			m[next.x][next.y]=++curstep;
+			if(next.x != end.x || next.y != end.y) // 没到终点 
+				Try(next,curstep); // 试探下一点(递归调用) 
+			else
+				Print(x,y); // 输出结果 
+			m[next.x][next.y]=-1; // 恢复为通路，试探下一条路 
+			curstep--;
+		}
+	}
+}
+
+// 0为墙，-1为通道
+
+int main()
+{
+	struct PosType begin;	//起点
+	int i,j,x1,y1;
+
+	printf("请输入迷宫的行数,列数(包括外墙)：（空格隔开）");
+	scanf("%d%d",&x,&y);
+	for(i=0;i<x;i++) // 定义周边值为0(同墙) 
+	{
+		m[0][i]=0;	// 迷宫上面行的周边即上边墙 
+		m[x-1][i]=0;// 迷宫下面行的周边即下边墙 
+	}
+	for(j=1;j<y-1;j++)
+	{
+		m[j][0]=0;	// 迷宫左边列的周边即左边墙 
+		m[j][y-1]=0;// 迷宫右边列的周边即右边墙 
+	}
+	for(i=1;i<x-1;i++)
+		for(j=1;j<y-1;j++)
+			m[i][j]=-1; // 定义通道初值为-1 
+	
+	printf("请输入迷宫内墙单元数(即墙的个数)：");
+	scanf("%d",&j);
+	if(j)
+		printf("请依次输入迷宫内墙每个单元的行数,列数：（空格隔开）\n");
+	for(i=1;i<=j;i++)
+	{
+		scanf("%d%d",&x1,&y1);
+		m[x1][y1]=0;
+	}
+	printf("迷宫结构如下:\n");
+	Print(x,y);
+	printf("请输入起点的行数,列数：（空格隔开）");
+	scanf("%d%d",&begin.x,&begin.y);
+	printf("请输入终点的行数,列数：（空格隔开）");
+	scanf("%d%d",&end.x,&end.y);
+	m[begin.x][begin.y]=1;
+	Try(begin,1); // 由第一步起点试探起 
+	
+	system("pause");
+	return 0; 
+}
+
+/*
+输出效果：
+
+请输入迷宫的行数,列数(包括外墙)：（空格隔开）4 4
+请输入迷宫内墙单元数(即墙的个数)：1
+请依次输入迷宫内墙每个单元的行数,列数：（空格隔开）
+1 2
+迷宫结构如下:
+  0  0  0  0
+  0 -1  0  0
+  0 -1 -1  0
+  0  0  0  0
+
+请输入起点的行数,列数：（空格隔开）1 1
+请输入终点的行数,列数：（空格隔开）2 2
+  0  0  0  0
+  0  1  0  0
+  0  2  3  0
+  0  0  0  0
+
+请按任意键继续. . . 
+
+*/

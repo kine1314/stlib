@@ -1,0 +1,42 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: va_test - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP686C.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fp"Debug/va_test.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"D:\115Box\stlib\help\ͼ\tpsort\tpsort.c"
+"D:\115Box\stlib\help\ͼ\tpsort\adjacenty_list.c"
+"D:\115Box\stlib\help\ͼ\tpsort\Stack_ADT.c"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP686C.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP686D.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:yes /pdb:"Debug/va_test.pdb" /debug /machine:I386 /out:"Debug/va_test.exe" /pdbtype:sept 
+".\Debug\tpsort.obj"
+".\Debug\adjacenty_list.obj"
+".\Debug\Stack_ADT.obj"
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP686D.tmp"
+<h3>Output Window</h3>
+Compiling...
+tpsort.c
+adjacenty_list.c
+d:\115box\stlib\help\ͼ\tpsort\tpsort.c(54) : warning C4715: 'get_index' : not all control paths return a value
+Stack_ADT.c
+Linking...
+LIBCD.lib(wincrt0.obj) : error LNK2001: unresolved external symbol _WinMain@16
+Debug/va_test.exe : fatal error LNK1120: 1 unresolved externals
+Error executing link.exe.
+
+
+
+<h3>Results</h3>
+va_test.exe - 2 error(s), 1 warning(s)
+</pre>
+</body>
+</html>

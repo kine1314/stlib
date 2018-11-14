@@ -1,0 +1,184 @@
+/*
+	数据结构C语言版 非循环队列
+	编译环境：Dev-C++ 4.9.9.2
+	日期： 2011年2月12日 
+*/
+
+#include <stdio.h>
+#include <malloc.h>
+#include <stdlib.h>
+
+typedef int QElemType;
+
+// 顺序队列(非循环，因为是非循环的，所以需要判断是否溢出
+#define MAXQSIZE 5 // 最大队列长度(对于循环队列，最大队列长度要减1) 
+typedef struct
+{
+	QElemType *base;// 初始化的动态分配存储空间 相当于一个数组 
+	// 头指针,若队列不空,指向队列头元素，相当于一个数组下标
+	int front;
+	// 尾指针,若队列不空,指向队列尾元素的下一个位置 相当于一个数组下标
+	int rear;
+}SqQueue;
+
+// 构造一个空队列Q
+int InitQueue(SqQueue *Q)
+{ 
+	//分配定长的空间，相当于一个数组
+	(*Q).base=(QElemType *)malloc(MAXQSIZE*sizeof(QElemType));
+	if(!(*Q).base) // 存储分配失败 
+		exit(0);
+	(*Q).front=(*Q).rear=0;	//初始化下标
+	return 1;
+}
+
+// 销毁队列Q,Q不再存在
+int DestroyQueue(SqQueue *Q)
+{ 
+	if((*Q).base)
+		free((*Q).base);
+	(*Q).base=NULL;
+	(*Q).front=(*Q).rear=0;
+	return 1;
+}
+
+// 将Q清为空队列
+int ClearQueue(SqQueue *Q)
+{ 
+	(*Q).front=(*Q).rear=0;
+	return 1;
+}
+
+// 若队列Q为空队列,则返回1,否则返回0 
+int QueueEmpty(SqQueue Q)
+{
+	if(Q.front==Q.rear) // 队列空的标志 
+		return 1;
+	else
+		return 0;
+}
+
+// 返回Q的元素个数,即队列的长度 
+int QueueLength(SqQueue Q)
+{
+	return(Q.rear-Q.front);
+}
+
+// 若队列不空,则用e返回Q的队头元素,并返回1,否则返回0 
+int GetHead(SqQueue Q,QElemType *e)
+{
+	if(Q.front==Q.rear) // 队列空 
+		return 0;
+	*e=*(Q.base+Q.front);
+	return 1;
+}
+
+// 插入元素e为Q的新的队尾元素 
+int EnQueue(SqQueue *Q,QElemType e)
+{
+	if((*Q).rear>=MAXQSIZE)
+	{ // 队列满，增加1个存储单元 
+		(*Q).base=(QElemType *)realloc((*Q).base,
+			((*Q).rear+1)*sizeof(QElemType));
+		if(!(*Q).base) // 增加单元失败 
+			return 0;
+	}
+	*((*Q).base+(*Q).rear)=e;
+	(*Q).rear++;
+	return 1;
+}
+
+// 若队列不空,则删除Q的队头元素,用e返回其值,并返回1,否则返回0 
+int DeQueue(SqQueue *Q,QElemType *e)
+{
+	if((*Q).front==(*Q).rear) // 队列空 
+		return 0;
+	*e=(*Q).base[(*Q).front];
+	(*Q).front=(*Q).front+1;
+	return 1;
+}
+
+// 从队头到队尾依次对队列Q中每个元素调用函数vi()
+int QueueTraverse(SqQueue Q,void(*vi)(QElemType))
+{
+	int i;
+	i=Q.front;
+	while(i!=Q.rear)
+	{
+		vi(*(Q.base+i));
+		i++;
+	}
+	printf("\n");
+	return 1;
+}
+
+
+void visit(QElemType i)
+{
+	printf("%d ",i);
+}
+
+int main()
+{
+	int j;
+	int i,n;
+	QElemType d;
+	SqQueue Q;
+	
+	InitQueue(&Q);
+	printf("初始化队列后，队列空否？%u(1:空 0:否)\n",QueueEmpty(Q));
+	printf("队列长度为：%d\n",QueueLength(Q));
+	printf("请输入队列元素个数n: ");
+	scanf("%d",&n);
+	printf("请输入%d个整型队列元素:\n",n);
+	for(i=0;i<n;i++)
+	{
+		scanf("%d",&d);
+		EnQueue(&Q,d);
+	}
+	printf("队列长度为：%d\n",QueueLength(Q));
+	printf("现在队列空否？%u(1:空 0:否)\n",QueueEmpty(Q));
+	printf("现在队列中的元素为: \n");
+	QueueTraverse(Q,visit);
+	DeQueue(&Q,&d);
+	printf("删除队头元素%d\n",d);
+	printf("队列中的元素为: \n");
+	QueueTraverse(Q,visit);
+	j=GetHead(Q,&d);
+	if(j)
+		printf("队头元素为: %d\n",d);
+	else
+		printf("无队头元素(空队列)\n");
+	ClearQueue(&Q);
+	printf("清空队列后, 队列空否？%u(1:空 0:否)\n",QueueEmpty(Q));
+	j=GetHead(Q,&d);
+	if(j)
+		printf("队头元素为: %d\n",d);
+	else
+		printf("无队头元素(空队列)\n");
+	DestroyQueue(&Q);
+	
+	system("pause");
+	return 0;
+}
+/*
+输出效果:
+
+初始化队列后，队列空否？1(1:空 0:否)
+队列长度为：0
+请输入队列元素个数n: 3
+请输入3个整型队列元素:
+1 2 3
+队列长度为：3
+现在队列空否？0(1:空 0:否)
+现在队列中的元素为:
+1 2 3
+删除队头元素1
+队列中的元素为:
+2 3
+队头元素为: 2
+清空队列后, 队列空否？1(1:空 0:否)
+无队头元素(空队列)
+请按任意键继续. . . 
+
+*/

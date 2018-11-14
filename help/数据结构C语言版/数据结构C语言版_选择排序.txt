@@ -1,0 +1,255 @@
+/*
+	数据结构C语言版 选择排序 
+	P277-P282
+	编译环境：VC++6.0
+	日期：2011年2月16日 
+*/ 
+#include <stdio.h>
+#include <malloc.h>
+#include <math.h>
+#include <limits.h>
+
+// 记录类型
+typedef struct
+{
+	int key;		// 关键字项
+	int otherinfo;	// 其它数据项
+}RedType;
+
+#define MAXSIZE 30	// 一个用作示例的小顺序表的最大长度
+
+// 顺序表类型
+typedef struct
+{
+	RedType r[MAXSIZE+1];	// r[0]闲置或用作哨兵单元
+	int length;				// 顺序表长度
+}SqList;
+
+// 打印顺序表 
+void print(SqList L)
+{
+	int i;
+	
+	for(i = 1; i <= L.length; i++)
+		printf("(%d, %d) ", L.r[i].key, L.r[i].otherinfo);
+	
+	printf("\n\n");
+}
+
+// 返回在L.r[i..L.length]中key最小的记录的序号 
+int SelectMinKey(SqList L,int i)
+{
+	int min;
+	int j,k;
+	
+	k=i; // 设第i个为最小 
+	min=L.r[i].key;
+	for(j=i+1;j<=L.length;j++)
+		if(L.r[j].key<min) // 找到更小的 
+		{
+			k=j;
+			min=L.r[j].key;
+		}
+	return k;
+}
+
+// 算法10.9
+// 对顺序表L作简单选择排序。
+void SelectSort(SqList *L)
+{
+	int i,j;
+	RedType t;
+	for(i=1;i<(*L).length;++i)
+	{
+		//  选择第i小的记录，并交换到位 
+		j=SelectMinKey(*L,i); // 在L.r[i..L.length]中选择key最小的记录 
+		if(i!=j)
+		{ 
+			// 与第i个记录交换 
+			t=(*L).r[i];
+			(*L).r[i]=(*L).r[j];
+			(*L).r[j]=t;
+		}
+	}
+}
+
+// 树形选择排序 P278
+void TreeSort(SqList *L)
+{
+	int i,j,j1,k,k1,l,n=(*L).length;
+	RedType *t;
+	
+	l=(int)ceil(log(n)/log(2))+1;	// 完全二叉树的层数 
+	k=(int)pow(2,l)-1;				// l层完全二叉树的结点总数 
+	k1=(int)pow(2,l-1)-1;			// l-1层完全二叉树的结点总数 
+	
+	t=(RedType*)malloc(k*sizeof(RedType)); // 二叉树采用顺序存储结构 
+
+	for(i=1;i<=n;i++) // 将L.r赋给叶子结点 
+		t[k1+i-1]=(*L).r[i];
+	
+	for(i=k1+n;i<k;i++) // 给多余的叶子的关键字赋无穷大 
+		t[i].key=INT_MAX;
+	
+	j1=k1;
+	j=k;
+	while(j1)
+	{
+		// 给非叶子结点赋值 
+		for(i=j1;i<j;i+=2)
+			t[i].key<t[i+1].key ? (t[(i+1)/2-1]=t[i]) : 
+				(t[(i+1)/2-1]=t[i+1]);
+		j=j1;
+		j1=(j1-1)/2;
+	}
+
+	for(i=0;i<n;i++)
+	{
+		(*L).r[i+1]=t[0]; // 将当前最小值赋给L.r[i] 
+		j1=0;
+		for(j=1;j<l;j++) // 沿树根找结点t[0]在叶子中的序号j1 
+			t[2*j1+1].key == t[j1].key ? 
+				(j1=2*j1+1) : (j1=2*j1+2);
+		t[j1].key=INT_MAX;
+	
+		while(j1)
+		{
+			j1=(j1+1)/2-1; // 序号为j1的结点的双亲结点序号 
+			
+			t[2*j1+1].key <= t[2*j1+2].key 
+				? (t[j1]=t[2*j1+1]) : (t[j1]=t[2*j1+2]);
+		}
+	}
+	free(t);
+}
+
+typedef SqList HeapType; // 堆采用顺序表存储表示 
+
+// 算法10.10  P282
+// 已知H.r[s..m]中记录的关键字除H.r[s].key之外均满足堆的定义，本函数 
+// 调整H.r[s]的关键字,使H.r[s..m]成为一个大顶堆(对其中记录的关键字而言)
+void HeapAdjust(HeapType *H,int s,int m)
+{
+	RedType rc;
+	int j;
+
+	rc=(*H).r[s];
+	for(j=2*s;j<=m;j*=2)
+	{
+		// 沿key较大的孩子结点向下筛选 
+		if(j < m && ((*H).r[j].key < (*H).r[j+1].key))
+			++j;	// j为key较大的记录的下标 
+		if(!(rc.key < (*H).r[j].key))
+			break;	// rc应插入在位置s上 
+		(*H).r[s]=(*H).r[j];
+		s=j;
+	}
+	(*H).r[s]=rc; // 插入 
+}
+
+// 算法10.11 P282
+// 对顺序表H进行堆排序。
+void HeapSort(HeapType *H)
+{
+	RedType t;
+	int i;
+
+	for(i=(*H).length/2;i>0;--i) // 把H.r[1..H.length]建成大顶堆 
+		HeapAdjust(H,i,(*H).length);
+	
+	for(i=(*H).length;i>1;--i)
+	{
+		// 将堆顶记录和当前未经排序子序列H.r[1..i]中最后一个记录相互交换 
+		t=(*H).r[1];
+		(*H).r[1]=(*H).r[i];
+		(*H).r[i]=t;
+		HeapAdjust(H,1,i-1); // 将H.r[1..i-1]重新调整为大顶堆 
+	}
+}
+
+
+
+#define N 8
+
+int main()
+{
+	RedType d[N] = {
+		{ 49, 1}, { 38, 2}, { 65, 3}, { 97, 4},
+		{ 76, 5}, { 13, 6}, { 27, 7}, { 49, 8}
+	};
+	SqList l;
+	int i;
+
+	for(i=0;i<N;i++)
+		l.r[i+1]=d[i];
+	l.length=N;
+	
+	printf("排序前:\n");
+	print(l);
+
+/*****************简单选择排序**********************/
+#if 0
+	SelectSort(&l);
+	
+	printf("简单选择排序后:\n");
+	print(l);
+#endif
+
+/*****************树形选择排序**********************/
+#if 0
+	TreeSort(&l);
+	
+	printf("树形选择排序后:\n");
+	print(l);
+#endif
+
+/*****************堆排序**********************/
+#if 1
+	HeapSort(&l);
+	
+	printf("堆排序后:\n");
+	print(l);
+#endif
+
+
+	system("pause");
+	return 0;
+}
+
+/*
+输出效果：
+
+*****************简单选择排序**********************
+
+排序前:
+(49, 1) (38, 2) (65, 3) (97, 4) (76, 5) (13, 6) (27, 7) (49, 8)
+
+简单选择排序后:
+(13, 6) (27, 7) (38, 2) (49, 1) (49, 8) (65, 3) (76, 5) (97, 4)
+
+请按任意键继续. . .
+
+
+*****************树形选择排序**********************
+
+排序前:
+(49, 1) (38, 2) (65, 3) (97, 4) (76, 5) (13, 6) (27, 7) (49, 8)
+
+树形选择排序后:
+(13, 6) (27, 7) (38, 2) (49, 1) (49, 8) (65, 3) (76, 5) (97, 4)
+
+请按任意键继续. . .
+
+
+*****************堆排序**********************
+
+排序前:
+(49, 1) (38, 2) (65, 3) (97, 4) (76, 5) (13, 6) (27, 7) (49, 8)
+
+堆排序后:
+(13, 6) (27, 7) (38, 2) (49, 1) (49, 8) (65, 3) (76, 5) (97, 4)
+
+请按任意键继续. . .
+
+
+*/

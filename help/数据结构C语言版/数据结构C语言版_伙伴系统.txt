@@ -1,0 +1,311 @@
+#include <stdio.h>
+#include <malloc.h>
+#include <math.h>
+/*
+	数据结构C语言版 伙伴系统
+	算法8.2 P205
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月9日 
+*/
+
+
+// 可利用空间总容量1024字的2的幂次,子表的个数为m+1
+#define m 10 
+// 伙伴系统可利用空间表的结构
+typedef struct WORD
+{
+	struct WORD *llink;	// 指向前驱结点 
+	int tag;			// 块标志,0:空闲,1:占用 
+	int kval;			// 块大小,值为2的幂次k 
+	struct WORD *rlink;	// 头部域,指向后继结点 
+}WORD, head, *Space;	// WORD:内存字类型,结点的第一个字也称为head 
+
+typedef struct HeadNode
+{
+	int nodesize;		// 该链表的空闲块的大小 
+	struct WORD *first;	// 孩链表的表头指针 
+}FreeList[m+1];			// 表头向量类型 
+
+#define N 100	// 占用块个数的最大值 
+Space r;		// r为整个生成空间的首地址,全局量 
+
+/*
+	算法8.2 P205
+	avail[0..m]为可利用空间表,n为申请分配量,若有不小于n的空闲块, 
+	则分配相应的存储块,并返回其首地址;否则返回NULL。
+*/
+Space AllocBuddy(FreeList *avail, int n)
+{
+	int i,k;
+	Space pa,pi,pre,suc;
+	
+	// 查找满足分配要求的子表即空闲块大小大于n的表
+	for(k = 0;k <= m && ((*avail)[k].nodesize < n+1
+		|| !(*avail)[k].first); ++k)
+		; 
+	if(k > m)
+	{
+		printf("分配失败！\n");
+		return NULL;
+	}
+	else // 进行分配 
+	{
+		pa = (*avail)[k].first;	// 指向可分配子表的第一个结点 
+		pre = pa->llink;		// 指向前驱 
+		suc = pa->rlink;		// 指向后继 
+		if(pa == suc)			// 相同的 
+			(*avail)[k].first = NULL;	// 分配后该子表变成空表 
+		else	// 从子表删去*pa结点(分配的) 
+		{
+			pre->rlink = suc;
+			suc->llink = pre;
+			(*avail)[k].first = suc;
+		}
+		// 将块(*avail)[k]的剩余块分成按由大到小（2的k-i次幂）的顺序
+		// 依次插入相应大小的子表中 
+		for(i = 1; (*avail)[k-i].nodesize >= n+1; ++i)
+		{
+			pi = pa + (int)pow(2, k-i);
+			pi->rlink = pi;
+			pi->llink = pi;
+			pi->tag = 0;
+			pi->kval = k-i;
+			(*avail)[k-i].first = pi;
+		} 
+		pa->tag = 1;
+		pa->kval = k-(--i);
+	}
+	return pa;
+}
+
+// 返回相对起始地址为p,块大小为pow(2,k)的块的伙伴地址
+Space buddy(Space p)
+{ 
+	if((p - r) % (int)pow(2,p->kval+1) == 0)	// p为前块  
+		return p + (int)pow(2, p->kval);
+	else // p为后块 
+		return p - (int)pow(2, p->kval);
+}
+
+// 伙伴系统的回收算法 将p所指的释放块回收到可利用空间表pav中
+void Reclaim(FreeList *pav,Space *p)
+{ 
+	Space s;
+
+	// 伙伴块的起始地址
+	s = buddy(*p); 
+	// printf("回收的过程演示：\n伙伴块的起始地址：%u\n",s);
+	// 归并伙伴块,s >= r && s < r+(*pav)[m].nodesize 说明伙伴块起始地
+	// 址在有效范围内且伙伴块空闲 
+	while(s >= r && s < r+(*pav)[m].nodesize && s->tag == 0)
+	{
+		// 从链表上删除该结点 
+		if(s->llink == s && s->rlink == s)	// 链表上仅此一个结点 
+			(*pav)[s->kval].first = NULL;	// 置此链表为空 
+		else	// 链表上不止一个结点，则将该结点s删除 
+		{
+			s->llink->rlink = s->rlink; 	// 前驱的后继为该结点的后继 
+			s->rlink->llink = s->llink;		// 后继的前驱为该结点的前驱 
+			if((*pav)[s->kval].first == s)	// s是链表的第一个结点 
+				(*pav)[s->kval].first = s->rlink; // 表头指向下一个结点 
+		} 
+		// 修改结点头部 
+		if( (*p-r) % (int)pow(2,(*p)->kval+1) == 0) // p为前块 
+			(*p)->kval++;
+		else // p为后块 
+		{
+			s->kval = (*p)->kval+1;
+			*p = s; // p指向新块首地址 
+		}
+		s = buddy(*p); // 下一个伙伴块的起始地址 
+		// printf("伙伴块的起始地址：%u\n",s);
+	}
+	// 将p插到可利用空间表中 
+	(*p)->tag = 0;
+	if((*pav)[(*p)->kval].first == NULL) // 该链表空 
+		(*pav)[(*p)->kval].first = (*p)->llink = (*p)->rlink = *p;
+	else // 插在表头 
+	{
+		(*p)->rlink = (*pav)[(*p)->kval].first;
+		(*p)->llink = (*p)->rlink->llink;
+		(*p)->rlink->llink = *p;
+		(*p)->llink->rlink = *p;
+		(*pav)[(*p)->kval].first = *p;
+	}
+	*p = NULL;
+}
+
+// 输出p中所有可利用空间表
+void Print(FreeList p)
+{ 
+	int i;
+	Space h;
+	printf("可利用空间：\n");
+	for(i = 0; i <= m; i++)
+	{
+		if(p[i].first) // 第i个可利用空间表不空 
+		{
+			h = p[i].first; // h指向链表的第一个结点的头部域(首地址) 
+			do
+			{
+				printf("块的大小=%d 块的首地址=%u ",
+					(int)pow(2,h->kval),h); // 输出结点信息 
+				printf("块标志=%d(0:空闲 1:占用)\n", h->tag);
+				h = h->rlink; // 指向下一个结点的头部域(首地址) 
+			}while(h != p[i].first); // 没到循环链表的表尾 
+		}
+	}
+	printf("\n");
+}
+
+// 输出p数组所指的已分配空间
+void PrintUser(Space p[])
+{ 
+	int i;
+	printf("已利用空间：\n");
+	for(i = 0; i < N; i++)
+		if(p[i]) // 指针不为0(指向一个占用块) 
+		{
+			printf("占用块%d的首地址=%u ", i, p[i]); 
+			printf("块的大小=%d",(int)pow(2,p[i]->kval));
+			printf(" 块标志=%d(0:空闲 1:占用)\n", p[i]->tag);
+		}
+	printf("\n");
+}
+
+int main()
+{
+	int i,n;
+	FreeList a;
+	Space q[N] = { NULL }; // q数组为占用块的首地址 
+	
+	printf("这里假设的内存空间的单位是WORD结构的字节数.\n");
+	printf("WORD的大小=%u\n", sizeof(WORD)); 
+	printf("可分配的总空间(int)pow(2,%d) = %u\n",m,(int)pow(2,m));
+	for(i = 0; i <= m; i++) // 初始化可利用空间a 
+	{
+		a[i].nodesize = (int)pow(2,i);
+		a[i].first = NULL;
+	}
+	// 在最大链表中生成一个结点 
+	r = a[m].first = (WORD*)malloc(a[m].nodesize*sizeof(WORD));
+	if(r) // 生成结点成功 
+	{
+		printf("起始地址r为：%u\n",r);
+		r->llink = r->rlink = r; // 初始化该结点 
+		r->tag = 0;
+		r->kval = m;
+		Print(a);
+		PrintUser(q);
+		
+		n = 100;
+		printf("申请%d个字后:\n",n);
+		// 向a申请100个WORD的内存(实际获得128个WORD因为
+		// 100>64 && 100<128 ,所以给它分配了128个WORD的内存) 
+		q[0] = AllocBuddy(&a,n);
+		Print(a);
+		PrintUser(q);
+
+		n = 200;
+		printf("申请%d个字后:\n",n);
+		// 向a申请200个WORD的内存(实际获得256个WORD)
+		q[1] = AllocBuddy(&a,n); 
+		Print(a);
+		PrintUser(q);
+
+		n = 220;
+		printf("申请%d个字后:\n",n);
+		// 向a申请220个WORD的内存(实际获得256个WORD)
+		q[2] = AllocBuddy(&a,n); 
+		Print(a);
+		PrintUser(q);
+
+		printf("回收q[1]后:\n");
+		Reclaim(&a,&q[1]); // 回收q[1]，伙伴不空闲 
+		Print(a);
+		PrintUser(q);
+		
+		printf("回收q[0]后:\n");
+		Reclaim(&a,&q[0]); // 回收q[0]，伙伴空闲 
+		Print(a);
+		PrintUser(q);
+		
+		printf("回收q[2]后:\n");
+		Reclaim(&a,&q[2]); // 回收q[2]，伙伴空闲，生成一个大结点 
+		Print(a);
+		PrintUser(q);
+	}
+	else
+		printf("分配失败！\n");
+		
+	system("pause");
+	return 0;
+}
+/*
+输出效果：
+
+这里假设的内存空间的单位是WORD结构的字节数.
+WORD的大小=16
+可分配的总空间(int)pow(2,10) = 1024
+起始地址r为：3420912
+可利用空间：
+块的大小=1024 块的首地址=3420912 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+
+申请100个字后:
+可利用空间：
+块的大小=128 块的首地址=3422960 块标志=0(0:空闲 1:占用)
+块的大小=256 块的首地址=3425008 块标志=0(0:空闲 1:占用)
+块的大小=512 块的首地址=3429104 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+占用块0的首地址=3420912 块的大小=128 块标志=1(0:空闲 1:占用)
+
+申请200个字后:
+可利用空间：
+块的大小=128 块的首地址=3422960 块标志=0(0:空闲 1:占用)
+块的大小=512 块的首地址=3429104 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+占用块0的首地址=3420912 块的大小=128 块标志=1(0:空闲 1:占用)
+占用块1的首地址=3425008 块的大小=256 块标志=1(0:空闲 1:占用)
+
+申请220个字后:
+可利用空间：
+块的大小=128 块的首地址=3422960 块标志=0(0:空闲 1:占用)
+块的大小=256 块的首地址=3433200 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+占用块0的首地址=3420912 块的大小=128 块标志=1(0:空闲 1:占用)
+占用块1的首地址=3425008 块的大小=256 块标志=1(0:空闲 1:占用)
+占用块2的首地址=3429104 块的大小=256 块标志=1(0:空闲 1:占用)
+
+回收q[1]后:
+可利用空间：
+块的大小=128 块的首地址=3422960 块标志=0(0:空闲 1:占用)
+块的大小=256 块的首地址=3425008 块标志=0(0:空闲 1:占用)
+块的大小=256 块的首地址=3433200 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+占用块0的首地址=3420912 块的大小=128 块标志=1(0:空闲 1:占用)
+占用块2的首地址=3429104 块的大小=256 块标志=1(0:空闲 1:占用)
+
+回收q[0]后:
+可利用空间：
+块的大小=256 块的首地址=3433200 块标志=0(0:空闲 1:占用)
+块的大小=512 块的首地址=3420912 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+占用块2的首地址=3429104 块的大小=256 块标志=1(0:空闲 1:占用)
+
+回收q[2]后:
+可利用空间：
+块的大小=1024 块的首地址=3420912 块标志=0(0:空闲 1:占用)
+
+已利用空间：
+
+请按任意键继续. . . 
+
+
+*/

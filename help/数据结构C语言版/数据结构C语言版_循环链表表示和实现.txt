@@ -1,0 +1,318 @@
+/*
+	数据结构C语言版 循环链表表示和实现
+	P35 
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月10日 
+*/ 
+#include <stdio.h>
+#include <malloc.h>
+#include <stdlib.h>
+
+typedef int ElemType;
+// 线性表的单链表存储结构
+typedef struct LNode
+{
+	ElemType data;
+	struct LNode *next;
+}LNode, *LinkList;
+
+// 要好好区分什么是头结点((*L)->next)，尾结点(*L)，以及第一个结
+// 点(*L)->next->next,设立尾指针的单循环链表(头尾相接，即头结点
+// 与尾结点是一样的，它们都没数据域.
+
+// 构造一个空的循环链表L
+int InitList_CL(LinkList *L)
+{ 
+	// 产生头结点,并使L指向此头结点
+	*L = (LinkList)malloc(sizeof(struct LNode));
+	if(!*L)
+		exit(0);
+	// 指针域指向头结点，这样就构成了一个循环，空表循环，*L为表尾 
+	(*L)->next = *L; 
+	return 1;
+}
+
+// 销毁循环链表L
+int DestroyList_CL(LinkList *L)
+{
+	LinkList q,
+		p = (*L)->next; // p指向头结点 
+	while(p != *L)	// 没到表尾，*L为表尾 
+	{
+		q = p->next;
+		free(p);
+		p = q;
+	}
+	free(*L);
+	*L = NULL;
+	return 1;
+}
+
+// 将L重置为空表
+int ClearList_CL(LinkList *L)
+{ 
+	LinkList p, q;
+	*L=(*L)->next;	// L指向头结点 
+	p=(*L)->next;	// p指向第一个结点 
+	while(p!=*L)	// 没到表尾 
+	{
+		q=p->next;
+		free(p);
+		p=q;
+	}
+	(*L)->next=*L;	// 头结点指针域指向自身 
+	return 1;
+}
+
+// 若L为空表，则返回1，否则返回0
+int ListEmpty_CL(LinkList L)
+{
+	if(L->next==L) // 空 
+		return 1;
+	else
+		return 0;
+}
+
+// 返回L中数据元素个数
+int ListLength_CL(LinkList L)
+{
+	int i=0;
+	LinkList p=L->next;	// p指向头结点 
+	while(p!=L)	// 没到表尾 
+	{
+		i++;
+		p=p->next;
+	}
+	return i;
+}
+
+// 当第i个元素存在时,其值赋给e并返回1,否则返回0 
+int GetElem_CL(LinkList L,int i,ElemType *e)
+{
+	int j=1; // 初始化,j为计数器 
+	LinkList p=L->next->next; // p指向第一个结点 
+	if(i<=0||i>ListLength_CL(L)) // 第i个元素不存在 
+		return 0;
+	while(j<i)
+	{
+		// 顺指针向后查找,直到p指向第i个元素 
+		p=p->next;
+		j++;
+	}
+	*e=p->data; // 取第i个元素 
+	return 1;
+}
+
+// 返回L中第1个与e满足关系compare()的数据元素的位序。 
+// 若这样的数据元素不存在，则返回值为0 	
+int LocateElem_CL(LinkList L,ElemType e,int(*compare)(ElemType,ElemType))
+{	
+	int i=0;
+	LinkList p=L->next->next; // p指向第一个结点 
+	while(p!=L->next)
+	{
+		i++;
+		if(compare(p->data,e)) // 满足关系 
+			return i;
+		p=p->next;
+	}
+	return 0;
+}
+
+// 若cur_e是L的数据元素，且不是第一个，则用pre_e返回它的前驱.
+int PriorElem_CL(LinkList L,ElemType cur_e,ElemType *pre_e)
+{
+	LinkList q,p=L->next->next; // p指向第一个结点 
+	q=p->next;
+	while(q!=L->next) // p没到表尾 
+	{
+		if(q->data==cur_e)
+		{
+			*pre_e=p->data;
+			return 1;
+		}
+		p=q;
+		q=q->next;
+	}
+	return 0;
+}
+
+// 若cur_e是L的数据元素,且不是最后一个,则用next_e返回它的后继.
+int NextElem_CL(LinkList L,ElemType cur_e,ElemType *next_e)
+{
+	LinkList p=L->next->next; // p指向第一个结点 
+	while(p!=L) // p没到表尾 
+	{
+		if(p->data==cur_e)
+		{
+			*next_e=p->next->data;
+			return 1;
+		}
+		p=p->next;
+	}
+	return 0;
+}
+
+// 在L的第i个位置之前插入元素e 
+int ListInsert_CL(LinkList *L,int i,ElemType e)
+{
+	LinkList p=(*L)->next,s; // p指向头结点 
+	int j=0;
+	if(i<=0||i>ListLength_CL(*L)+1) // 无法在第i个元素之前插入 
+		return 0;
+	while(j<i-1) // 寻找第i-1个结点 
+	{
+		p=p->next;
+		j++;
+	}
+	s=(LinkList)malloc(sizeof(struct LNode)); // 生成新结点 
+	s->data=e; // 插入L中 
+	s->next=p->next;
+	p->next=s;
+	if(p==*L) // 改变尾结点 
+		*L=s;
+	return 1;
+}
+
+// 删除L的第i个元素,并由e返回其值
+int ListDelete_CL(LinkList *L,int i,ElemType *e) 
+{
+	LinkList p=(*L)->next,q; // p指向头结点 
+	int j=0;
+	if(i<=0||i>ListLength_CL(*L)) // 第i个元素不存在 
+		return 0;
+	while(j<i-1) // 寻找第i-1个结点 
+	{
+		p=p->next;
+		j++;
+	}
+	q=p->next; // q指向待删除结点 
+	p->next=q->next;
+	*e=q->data;
+	if(*L==q) // 删除的是表尾元素 
+		*L=p;
+	free(q); // 释放待删除结点 
+	return 1;
+}
+
+// 依次对L的每个数据元素调用函数vi()
+int ListTraverse_CL(LinkList L,void(*vi)(ElemType))
+{
+	LinkList p=L->next->next;// p指向第一个结点 
+	while(p!=L->next)
+	{
+		vi(p->data);
+		p=p->next;
+	}
+	printf("\n");
+	return 1;
+}
+
+// 两个仅设表尾指针的循环链表的合并（教科书P35图2.13）
+void MergeList_CL(LinkList *La,LinkList Lb)
+{
+	LinkList p=Lb->next;
+	Lb->next=(*La)->next;
+	(*La)->next=p->next;   
+	free(p);
+	*La=Lb;
+}
+
+int compare(ElemType c1,ElemType c2)
+{
+	if(c1==c2)
+		return 1;
+	else
+		return 0;
+}
+
+void visit(ElemType c)
+{
+	printf("%d ",c);
+}
+
+int main()
+{
+	LinkList L, La, Lb;
+	ElemType e;
+	int i, j, n;
+
+	i=InitList_CL(&L); // 初始化单循环链表L 
+	printf("初始化单循环链表L i=%d (1:初始化成功)\n",i);
+	i=ListEmpty_CL(L);
+	printf("L是否空 i=%d(1:空 0:否)\n",i);
+	ListInsert_CL(&L,1,3); // 在L中依次插入3,5 
+	ListInsert_CL(&L,2,5);
+	i=GetElem_CL(L,1,&e);
+	j=ListLength_CL(L);
+	printf("L中数据元素个数=%d,第1个元素的值为%d。\n",j,e);
+	printf("L中的数据元素依次为：");
+	ListTraverse_CL(L,visit);
+	PriorElem_CL(L,5,&e); // 求元素5的前驱 
+	printf("5前面的元素的值为%d。\n",e);
+	NextElem_CL(L,3,&e); // 求元素3的后继 
+	printf("3后面的元素的值为%d。\n",e);
+	printf("L是否空 %d(1:空 0:否)\n",ListEmpty_CL(L));
+	j=LocateElem_CL(L,5,compare);
+	if(j)
+		printf("L的第%d个元素为5。\n",j);
+	else
+		printf("不存在值为5的元素\n");
+	i=ListDelete_CL(&L,2,&e);
+	printf("删除L的第2个元素：\n");
+	if(i)
+	{
+		printf("删除的元素值为%d,现在L中的数据元素依次为：",e);
+		ListTraverse_CL(L,visit);
+	}
+	else
+		printf("删除不成功！\n");
+	printf("清空L：%d(1: 成功)\n",ClearList_CL(&L));
+	printf("清空L后，L是否空：%d(1:空 0:否)\n",ListEmpty_CL(L));
+	printf("销毁L：%d(1: 成功)\n",DestroyList_CL(&L));
+	
+	n = 5;
+	//创建单循环链表
+	InitList_CL(&La);
+	for(i=1;i<=n;i++)
+		ListInsert_CL(&La,i,i);
+	printf("La="); // 输出链表La的内容 
+	ListTraverse_CL(La,visit);
+
+	//创建单循环链表
+	InitList_CL(&Lb);
+	for(i=1;i<=n;i++)
+		ListInsert_CL(&Lb,1,i*2);
+	printf("Lb="); // 输出链表Lb的内容 
+	ListTraverse_CL(Lb,visit);
+	
+	MergeList_CL(&La,Lb);
+	printf("La+Lb="); // 输出合并后的链表的内容 
+	ListTraverse_CL(La,visit);
+	
+	system("pause");
+	return 0;
+}
+
+/*
+输出效果：
+
+初始化单循环链表L i=1 (1:初始化成功)
+L是否空 i=1(1:空 0:否)
+L中数据元素个数=2,第1个元素的值为3。
+L中的数据元素依次为：3 5
+5前面的元素的值为3。
+3后面的元素的值为5。
+L是否空 0(1:空 0:否)
+L的第2个元素为5。
+删除L的第2个元素：
+删除的元素值为5,现在L中的数据元素依次为：3
+清空L：1(1: 成功)
+清空L后，L是否空：1(1:空 0:否)
+销毁L：1(1: 成功)
+La=1 2 3 4 5
+Lb=10 8 6 4 2
+La+Lb=1 2 3 4 5 10 8 6 4 2
+请按任意键继续. . . 
+
+*/

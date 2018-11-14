@@ -1,0 +1,291 @@
+/*
+	数据结构C语言版 栈求解迷宫问题
+	P50-52 利用栈求解迷宫问题
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月12日 
+*/
+
+/***************头文件**********************/
+
+// 迷宫坐标位置类型
+typedef struct	 
+{
+	int x;		// 行值 
+	int y;		// 列值 
+}PosType;
+
+#define MAXLENGTH 25 // 设迷宫的最大行列为25 
+
+typedef int MazeType[MAXLENGTH][MAXLENGTH]; // 迷宫数组[行][列] 
+
+typedef struct // 栈的元素类型 
+{
+	int ord; // 通道块在路径上的＂序号＂ 
+	PosType seat; // 通道块在迷宫中的＂坐标位置＂ 
+	int di; // 从此通道块走向下一通道块的＂方向＂(0～3表示东～北) 
+}SElemType;
+
+
+// 全局变量 
+MazeType m; // 迷宫数组
+ 
+int curstep=1; // 当前足迹,初值为1 
+
+
+#define STACK_INIT_SIZE 10	// 存储空间初始分配量 
+
+#define STACKINCREMENT 2	// 存储空间分配增量 
+
+// 栈的顺序存储表示 P46 
+typedef struct SqStack
+{
+	SElemType *base;	// 在栈构造之前和销毁之后，base的值为NULL 
+	SElemType *top;		// 栈顶指针 
+	int stacksize;		// 当前已分配的存储空间，以元素为单位 
+}SqStack;	// 顺序栈
+
+
+/****************实现************************/ 
+
+
+//	构造一个空栈S
+int InitStack(SqStack *S)
+{
+	// 为栈底分配一个指定大小的存储空间
+	(*S).base = (SElemType *)malloc(STACK_INIT_SIZE*sizeof(SElemType));
+	if( !(*S).base )
+		exit(0);
+	
+	(*S).top = (*S).base;	// 栈底与栈顶相同表示一个空栈
+	(*S).stacksize = STACK_INIT_SIZE;
+	
+	return 1;
+}
+
+// 若栈S为空栈（栈顶与栈底相同的），则返回1，否则返回0。
+int StackEmpty(SqStack S)
+{
+	if(S.top == S.base)
+		return 1;
+	else
+		return 0;
+}
+
+//	插入元素e为新的栈顶元素。
+int Push(SqStack *S, SElemType e)
+{
+	if((*S).top - (*S).base >= (*S).stacksize)	// 栈满，追加存储空间
+	{
+		(*S).base = (SElemType *)realloc((*S).base , 
+			((*S).stacksize + STACKINCREMENT) * sizeof(SElemType));
+		if( !(*S).base )
+			exit(0);
+		
+		(*S).top = (*S).base+(*S).stacksize;
+		(*S).stacksize += STACKINCREMENT;
+	}
+	*((*S).top)++=e;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	
+	return 1;
+}
+
+
+//	若栈不空，则删除S的栈顶元素，用e返回其值，并返回1；否则返回0。
+int Pop(SqStack *S,SElemType *e)
+{
+	if((*S).top == (*S).base)
+		return 0;
+	*e = *--(*S).top;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	
+	return 1;
+}
+
+
+// 定义墙元素值为0,可通过路径为1,不能通过路径为-1,通过路径为足迹
+ 
+// 当迷宫m的b点的序号为1(可通过路径)，return 1; 否则，return 0。
+int Pass(PosType b)
+{ 
+	if(m[b.x][b.y]==1)
+		return 1;
+	else
+		return 0;
+}
+
+
+// 使迷宫m的a点的序号变为足迹(curstep)，表示经过 
+void FootPrint(PosType a)
+{
+	m[a.x][a.y]=curstep;
+}
+
+
+// 根据当前位置及移动方向，返回下一位置 
+PosType NextPos(PosType c,int di)
+{
+	PosType direc[4]={{0,1},{1,0},{0,-1},{-1,0}}; // {行增量,列增量} 
+	// 移动方向,依次为东南西北 
+	c.x+=direc[di].x;
+	c.y+=direc[di].y;
+	return c;
+}
+
+
+// 使迷宫m的b点的序号变为-1(不能通过的路径)
+void MarkPrint(PosType b)
+{ 
+	m[b.x][b.y]=-1;
+}
+
+// 算法3.3 P51
+// 若迷宫maze中存在从入口start到出口end的通道，则求得一条 
+// 存放在栈中(从栈底到栈顶)，并返回1；否则返回0 
+int MazePath(PosType start,PosType end) 
+{ 	
+	SqStack S;
+	PosType curpos;
+	SElemType e;
+	
+	InitStack(&S);
+	curpos=start;
+	do
+	{
+		if(Pass(curpos))
+		{
+			// 当前位置可以通过，即是未曾走到过的通道块 
+			FootPrint(curpos); // 留下足迹 
+			e.ord=curstep;
+			e.seat.x=curpos.x;
+			e.seat.y=curpos.y;
+			e.di=0;
+			Push(&S,e); // 入栈当前位置及状态 
+			curstep++; // 足迹加1 
+			if(curpos.x==end.x&&curpos.y==end.y) // 到达终点(出口) 
+				return 1;
+			curpos=NextPos(curpos,e.di);
+		}
+		else
+		{
+			// 当前位置不能通过 
+			if(!StackEmpty(S))
+			{
+				Pop(&S,&e); // 退栈到前一位置 
+				curstep--;
+				// 前一位置处于最后一个方向(北) 
+				while(e.di==3&&!StackEmpty(S))
+				{
+					MarkPrint(e.seat); // 留下不能通过的标记(-1) 
+					Pop(&S,&e); // 退回一步 
+					curstep--;
+				}
+				if(e.di<3) // 没到最后一个方向(北) 
+				{
+					e.di++; // 换下一个方向探索
+					Push(&S,e);
+					curstep++;
+					// 设定当前位置是该新方向上的相邻块
+					curpos=NextPos(e.seat,e.di);
+				}
+			}
+		}
+	}while(!StackEmpty(S));
+	
+	return 0;
+}
+
+// 输出迷宫的结构 
+void Print(int x,int y)
+{ 
+	int i,j;
+	
+	for(i=0;i<x;i++)
+	{
+		for(j=0;j<y;j++)
+			printf("%3d",m[i][j]);
+		printf("\n");
+	}
+ }
+
+int main()
+{
+	PosType begin,end;
+	int i,j,x,y,x1,y1;
+	
+	printf("请输入迷宫的行数,列数(包括外墙)：(空格隔开)");
+	scanf("%d%d", &x, &y);
+	
+	for(i=0;i<x;i++) // 定义周边值为0(同墙) 
+	{
+		m[0][i]=0;	// 迷宫上面行的周边即上边墙 
+		m[x-1][i]=0;// 迷宫下面行的周边即下边墙 
+	}
+	
+	for(j=1;j<y-1;j++)
+	{
+		m[j][0]=0;	// 迷宫左边列的周边即左边墙 
+		m[j][y-1]=0;// 迷宫右边列的周边即右边墙 
+	}
+	
+	for(i=1;i<x-1;i++)
+		for(j=1;j<y-1;j++)
+			m[i][j]=1; // 定义通道初值为1 
+	
+	printf("请输入迷宫内墙单元数：");
+	scanf("%d",&j);
+	
+	printf("请依次输入迷宫内墙每个单元的行数,列数：(空格隔开)\n");
+	
+	for(i=1;i<=j;i++)
+	{
+		scanf("%d%d",&x1,&y1);
+		m[x1][y1]=0; // 定义墙的值为0 
+	}
+	
+	printf("迷宫结构如下:\n");
+	Print(x,y);
+	
+	printf("请输入起点的行数,列数：（空格隔开）");
+	scanf("%d%d",&begin.x,&begin.y);
+	
+	printf("请输入终点的行数,列数：（空格隔开）");
+	scanf("%d%d",&end.x,&end.y);
+	
+	if(MazePath(begin,end)) // 求得一条通路 
+	{
+		printf("此迷宫从入口到出口的一条路径如下:\n");
+		Print(x,y); // 输出此通路 
+	}
+	else
+		printf("此迷宫没有从入口到出口的路径\n");
+
+	system("pause");
+	return 0;
+}
+
+/*
+输出效果：
+
+请输入迷宫的行数,列数(包括外墙)：(空格隔开)5 5
+请输入迷宫内墙单元数：2
+请依次输入迷宫内墙每个单元的行数,列数：(空格隔开)
+1 2
+3 2
+迷宫结构如下:
+  0  0  0  0  0
+  0  1  0  1  0
+  0  1  1  1  0
+  0  1  0  1  0
+  0  0  0  0  0
+请输入起点的行数,列数：（空格隔开）1 1
+请输入终点的行数,列数：（空格隔开）3 3
+此迷宫从入口到出口的一条路径如下:
+  0  0  0  0  0
+  0  1  0  1  0
+  0  2  3  4  0
+  0  1  0  5  0
+  0  0  0  0  0
+请按任意键继续. . .
+
+*/

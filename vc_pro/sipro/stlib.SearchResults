@@ -1,0 +1,7 @@
+---- st_arry_qsort Matches (5 in 3 files) ----
+
+Stlibtest.c (h:\workdir\kine_src\stlib\trunk\test):	st_arry_qsort(array, 0, MAX_SIZE-1);
+St_arry.c (h:\workdir\kine_src\stlib\trunk\src\c\arry):void st_arry_qsort(stint *array,stint low,stint high)
+St_arry.c (h:\workdir\kine_src\stlib\trunk\src\c\arry):        st_arry_qsort(array, low, i-1);  
+St_arry.c (h:\workdir\kine_src\stlib\trunk\src\c\arry):        st_arry_qsort(array, i+1, high);  
+St_arry.h (h:\workdir\kine_src\stlib\trunk\include):void st_arry_qsort(stint *array,stint low,stint high);

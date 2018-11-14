@@ -1,0 +1,323 @@
+/*
+	数据结构C语言版 串的堆分配存储表示与实现
+	P76
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月8日 
+*/ 
+
+#include <stdio.h>
+#include <malloc.h>
+#include <stdlib.h>
+ 
+typedef struct
+{
+	char *ch;	// 若是非空串,则按串长分配存储区,否则ch为NULL 
+	int length; // 串长度 
+}HString;
+
+
+// 初始化(产生空串)字符串T
+void InitString(HString *T)
+{
+	(*T).length=0;
+	(*T).ch=NULL;
+}
+
+// 生成一个其值等于串常量chars的串T 
+int StrAssign(HString *T, char *chars)
+{
+	int i,j;
+	if((*T).ch)
+		free((*T).ch); // 释放T原有空间 
+	i = strlen(chars); // 求chars的长度i 
+	if(!i)
+	{ 
+		// chars的长度为0 
+		(*T).ch = NULL;
+		(*T).length = 0;
+	}
+	else
+	{
+		// chars的长度不为0 
+		(*T).ch = (char*)malloc(i*sizeof(char)); // 分配串空间 
+		if(!(*T).ch) // 分配串空间失败 
+			exit(0);
+		for(j = 0; j < i; j++) // 拷贝串 
+			(*T).ch[j] = chars[j];
+		(*T).length = i;
+	}
+	return 1;
+}
+
+// 由串S复制得串T
+int StrCopy(HString *T,HString S)
+{
+	int i;   
+	if((*T).ch)
+		free((*T).ch); // 释放T原有空间 
+	(*T).ch=(char*)malloc(S.length*sizeof(char)); // 分配串空间 
+	if(!(*T).ch) // 分配串空间失败 
+		exit(0);
+	for(i=0;i<S.length;i++) // 拷贝串 
+		(*T).ch[i]=S.ch[i];
+	(*T).length=S.length;
+	return 1;
+}
+
+// 若S为空串,则返回1,否则返回0 
+int StrEmpty(HString S)
+{
+	if(S.length == 0 && S.ch == NULL)
+		return 1;
+	else
+		return 0;
+}
+
+// 若S>T,则返回值>0;若S=T,则返回值=0;若S<T,则返回值<0
+int StrCompare(HString S,HString T)
+{
+	int i;
+	for(i=0;i<S.length && i<T.length;++i)
+		if(S.ch[i] != T.ch[i])
+			return S.ch[i]-T.ch[i];
+	return S.length-T.length;
+}
+
+// 返回S的元素个数,称为串的长度 
+int StrLength(HString S)
+{
+	return S.length;
+}
+
+// 将S清为空串 
+int ClearString(HString *S)
+{
+	if((*S).ch)
+	{
+		free((*S).ch);
+		(*S).ch=NULL;
+	}
+	(*S).length=0;
+	return 1;
+}
+
+// 用T返回由S1和S2联接而成的新串
+int Concat(HString *T,HString S1,HString S2)
+{
+	int i;
+	if((*T).ch)
+		free((*T).ch); // 释放旧空间 
+	(*T).length=S1.length+S2.length;
+	(*T).ch=(char *)malloc((*T).length*sizeof(char));	//分配新串的长度
+	if(!(*T).ch)
+		exit(0);
+	for(i=0;i<S1.length;i++)	//将S1接到新串T的后面
+		(*T).ch[i]=S1.ch[i];
+	for(i=0;i<S2.length;i++)	//将S2接到新串T的后面
+		(*T).ch[S1.length+i]=S2.ch[i];
+	return 1;
+}
+
+// 用Sub返回串S的第pos个字符起长度为len的子串。
+int SubString(HString *Sub, HString S,int pos,int len)
+{
+	int i;
+	if(pos<1||pos>S.length||len<0||len>S.length-pos+1)
+		return 0;
+	if((*Sub).ch)
+		free((*Sub).ch); // 释放旧空间 
+	if(!len) // 空子串 
+	{
+		(*Sub).ch=NULL;
+		(*Sub).length=0;
+	}
+	else
+	{ // 完整子串 
+		(*Sub).ch=(char*)malloc(len*sizeof(char));
+		if(!(*Sub).ch)
+			exit(0);
+		for(i=0;i<=len-1;i++)
+			(*Sub).ch[i]=S.ch[pos-1+i];
+		(*Sub).length=len;
+	}
+	return 1;
+}
+
+
+// 算法4.1 
+// T为非空串。若主串S中第pos个字符之后存在与T相等的子串, 
+// 则返回第一个这样的子串在S中的位置,否则返回0 
+int Index(HString S,HString T,int pos)
+{ 
+	int n,m,i;
+	HString sub;
+	
+	InitString(&sub);
+	if(pos>0)
+	{
+		n=StrLength(S);
+		m=StrLength(T);
+		i=pos;
+		while(i<=n-m+1)	//从第i个位置开始求与T等长的子串，循环直到找到
+		{
+			SubString(&sub,S,i,m);	//从第i个位置开始求得子串
+			if(StrCompare(sub,T)!=0)//将求得的子串与T对比，若不等则i++
+				++i;
+			else
+				return i;
+		}
+	}
+	return 0;
+}
+
+
+// 算法4.4
+// 在串S的第pos个字符之前插入串Ts
+int StrInsert(HString *S,int pos,HString T) 
+{
+	int i;
+	if(pos<1||pos>(*S).length+1) // pos不合法 
+		return 0;
+	if(T.length) // T非空,则重新分配空间,插入T 
+	{
+		(*S).ch = (char*)realloc((*S).ch, 
+			((*S).length+T.length)*sizeof(char));
+		if(!(*S).ch)
+			exit(0);
+		for(i=(*S).length-1;i>=pos-1;--i) // 为插入T而腾出位置 
+			(*S).ch[i+T.length]=(*S).ch[i];     
+		for(i=0;i<T.length;i++)
+			(*S).ch[pos-1+i]=T.ch[i]; // 插入T 
+		(*S).length+=T.length;
+	}
+	return 1;
+}
+
+// 从串S中删除第pos个字符起长度为len的子串
+int StrDelete(HString *S,int pos,int len)
+{
+	int i;
+	if((*S).length<pos+len-1)
+		exit(0);
+	for(i=pos-1;i<=(*S).length-len;i++)
+		(*S).ch[i]=(*S).ch[i+len];
+	(*S).length-=len;
+	(*S).ch=(char*)realloc((*S).ch,(*S).length*sizeof(char));
+	return 1;
+}
+
+// 用V替换主串S中出现的所有与T相等的不重叠的子串
+int Replace(HString *S,HString T,HString V)
+{
+	int i=1; // 从串S的第一个字符起查找串T 
+	if(StrEmpty(T)) // T是空串 
+		return 0;
+	do
+	{
+		i=Index(*S,T,i); // 结果i为从上一个i之后找到的子串T的位置 
+		if(i) // 串S中存在串T 
+		{
+			StrDelete(S,i,StrLength(T)); // 删除该串T 
+			StrInsert(S,i,V); // 在原串T的位置插入串V 
+			i+=StrLength(V); // 在插入的串V后面继续查找串T 
+		}
+	}while(i);
+	return 1;
+}
+
+void DestroyString()
+{
+	// 堆分配类型的字符串无法销毁 
+}
+
+// 输出T字符串
+void StrPrint(HString T)
+{
+	int i;
+	for(i=0;i<T.length;i++)
+		printf("%c",T.ch[i]);
+	printf("\n");
+}
+
+int main()
+{
+	int i;
+	char c,*p="God bye!",*q="God luck!";
+	HString t,s,r;
+	
+	// HString类型必需初始化
+	InitString(&t); 
+	InitString(&s);
+	InitString(&r);
+	StrAssign(&t,p);
+	printf("串t为: ");
+	StrPrint(t);
+	printf("串长为%d 串空否？%d(1:空 0:否)\n",StrLength(t),StrEmpty(t));
+	StrAssign(&s,q);
+	printf("串s为: ");
+	StrPrint(s);
+	i=StrCompare(s,t);
+	if(i<0)
+		c='<';
+	else if(i==0)
+		c='=';
+	else
+		c='>';
+	printf("串s%c串t\n",c);
+	Concat(&r,t,s);
+	printf("串t联接串s产生的串r为: ");
+	StrPrint(r);
+	StrAssign(&s,"oo");
+	printf("串s为: ");
+	StrPrint(s);
+	StrAssign(&t,"o");
+	printf("串t为: ");
+	StrPrint(t);
+	Replace(&r,t,s);
+	printf("把串r中和串t相同的子串用串s代替后，串r为:\n");
+	StrPrint(r);
+	ClearString(&s);
+	printf("串s清空后，串长为%d 空否？%d(1:空 0:否)\n",
+		StrLength(s),StrEmpty(s));
+	SubString(&s,r,6,4);
+	printf("串s为从串r的第6个字符起的4个字符，长度为%d 串s为: ",
+		s.length);
+	StrPrint(s);
+	StrCopy(&t,r);
+	printf("复制串t为串r,串t为: ");
+	StrPrint(t);
+	StrInsert(&t,6,s);
+	printf("在串t的第6个字符前插入串s后，串t为: ");
+	StrPrint(t);
+	StrDelete(&t,1,5);
+	printf("从串t的第1个字符起删除5个字符后,串t为: ");
+	StrPrint(t);
+	printf("%d是从串t的第1个字符起，和串s相同的第1个子串的位置\n",
+		Index(t,s,1));
+	printf("%d是从串t的第2个字符起，和串s相同的第1个子串的位置\n",
+		Index(t,s,2));
+	
+	system("pause");
+	return 0;
+}
+/*
+输出效果：
+ 
+串t为: God bye!
+串长为8 串空否？0(1:空 0:否)
+串s为: God luck!
+串s>串t
+串t联接串s产生的串r为: God bye!God luck!
+串s为: oo
+串t为: o
+把串r中和串t相同的子串用串s代替后，串r为:
+Good bye!Good luck!
+串s清空后，串长为0 空否？1(1:空 0:否)
+串s为从串r的第6个字符起的4个字符，长度为4 串s为: bye!
+复制串t为串r,串t为: Good bye!Good luck!
+在串t的第6个字符前插入串s后，串t为: Good bye!bye!Good luck!
+从串t的第1个字符起删除5个字符后,串t为: bye!bye!Good luck!
+1是从串t的第1个字符起，和串s相同的第1个子串的位置
+5是从串t的第2个字符起，和串s相同的第1个子串的位置
+请按任意键继续. . .
+*/ 

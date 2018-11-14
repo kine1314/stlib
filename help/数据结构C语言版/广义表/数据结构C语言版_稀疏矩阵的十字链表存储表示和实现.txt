@@ -1,0 +1,779 @@
+/*
+	数据结构C语言版 稀疏矩阵的十字链表存储表示和实现 
+	P104
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月13日 
+*/
+
+#include <stdio.h>
+#include <malloc.h>
+
+typedef int ElemType;
+
+// 稀疏矩阵的十字链表存储表示 
+typedef struct OLNode
+{
+	int i,j;	// 该非零元的行和列下标 
+	ElemType e;	// 非零元素值 
+	struct OLNode *right,*down; // 该非零元所在行表和列表的后继链域 
+}OLNode, *OLink;
+
+typedef struct
+{
+	// 行和列链表头指针向量基址,由CreatSMatrix_OL()分配
+	OLink *rhead, *chead; 
+	int mu, nu, tu;		// 稀疏矩阵的行数、列数和非零元个数 
+}CrossList;
+
+// 初始化M(CrossList类型的变量必须初始化,否则创建、复制矩阵将出错) 
+int InitSMatrix(CrossList *M)
+{
+	(*M).rhead=(*M).chead=NULL;
+	(*M).mu=(*M).nu=(*M).tu=0;
+	return 1;
+}
+
+// 销毁稀疏矩阵M
+int DestroySMatrix(CrossList *M)
+{
+	int i;
+	OLNode *p,*q;
+	
+	for(i=1;i<=(*M).mu;i++) // 按行释放结点 
+	{
+		p=*((*M).rhead+i);
+		while(p)
+		{
+			q=p;
+			p=p->right;
+			free(q);
+		}
+	}
+	free((*M).rhead);
+	free((*M).chead);
+	(*M).rhead=(*M).chead=NULL;
+	(*M).mu=(*M).nu=(*M).tu=0;
+	return 1;
+}
+
+// 算法5.4 
+// 创建稀疏矩阵M,采用十字链表存储表示。
+int CreateSMatrix(CrossList *M)
+{ 
+	int i,j,k,m,n,t;
+	ElemType e;
+	OLNode *p,*q;
+	
+	if((*M).rhead)
+		DestroySMatrix(M);
+	printf("请输入稀疏矩阵的行数 列数 非零元个数:(space) ");
+	scanf("%d%d%d",&m,&n,&t);
+	(*M).mu=m;
+	(*M).nu=n;
+	(*M).tu=t;
+	//初始化行链表头
+	(*M).rhead=(OLink*)malloc((m+1)*sizeof(OLink));
+	if(!(*M).rhead)
+		exit(0);
+	//初始化列链表头
+	(*M).chead=(OLink*)malloc((n+1)*sizeof(OLink));
+	if(!(*M).chead)
+		exit(0);
+	for(k=1;k<=m;k++) // 初始化行头指针向量;各行链表为空链表 
+		(*M).rhead[k]=NULL;
+	for(k=1;k<=n;k++) // 初始化列头指针向量;各列链表为空链表 
+		(*M).chead[k]=NULL;
+	
+	printf("请按任意次序输入%d个非零元的行 列 元素值:（空格）\n",(*M).tu);
+	for(k=0;k<t;k++)
+	{
+		scanf("%d%d%d",&i,&j,&e);
+		p=(OLNode*)malloc(sizeof(OLNode));
+		if(!p)
+			exit(0);
+		p->i=i; // 生成结点 
+		p->j=j;
+		p->e=e;
+		if((*M).rhead[i]==NULL||(*M).rhead[i]->j>j)	
+		{
+			// p插在该行的第一个结点处
+			p->right=(*M).rhead[i];
+			(*M).rhead[i]=p;
+		}
+		else // 寻查在行表中的插入位置 
+		{
+			//从该行的行链表头开始，直到找到
+			for(q=(*M).rhead[i]; q->right && q->right->j < j;q = q->right)
+				;
+			p->right=q->right; // 完成行插入 
+			q->right=p;
+		}
+		if((*M).chead[j] == NULL || (*M).chead[j]->i > i) 
+		{
+			// p插在该列的第一个结点处
+			p->down = (*M).chead[j];
+			(*M).chead[j] = p;
+		}
+		else // 寻查在列表中的插入位置 
+		{
+			for(q = (*M).chead[j];q->down && q->down->i < i;q = q->down)
+				;
+			p->down=q->down; // 完成列插入 
+			q->down=p;
+		}
+	}
+	return 1;
+}
+
+// 按行或按列输出稀疏矩阵M
+int PrintSMatrix(CrossList M)
+{
+	int i,j;
+	OLink p;
+	
+	printf("%d行%d列%d个非零元素\n",M.mu,M.nu,M.tu);
+	printf("请输入选择(1.按行输出 2.按列输出): ");
+	scanf("%d",&i);
+	switch(i)
+	{
+	case 1: 
+		for(j=1;j<=M.mu;j++)
+		{
+			p=M.rhead[j];
+			while(p)
+			{
+				printf("%d行%d列值为%d\n",p->i,p->j,p->e);
+				p=p->right;
+			}
+		}
+		break;
+	case 2: 
+		for(j=1;j<=M.nu;j++)
+		{
+			p=M.chead[j];
+			while(p)
+			{
+				printf("%d行%d列值为%d\n",p->i,p->j,p->e);
+				p=p->down;
+			}
+		}
+	}
+	return 1;
+}
+
+// 由稀疏矩阵M复制得到T
+int CopySMatrix(CrossList M,CrossList *T)
+{
+	int i;
+	OLink p,q,q1,q2;
+	
+	if((*T).rhead)
+		DestroySMatrix(T);
+	(*T).mu=M.mu;
+	(*T).nu=M.nu;
+	(*T).tu=M.tu;
+	(*T).rhead=(OLink*)malloc((M.mu+1)*sizeof(OLink));
+	if(!(*T).rhead)
+		exit(0);
+	(*T).chead=(OLink*)malloc((M.nu+1)*sizeof(OLink));
+	if(!(*T).chead)
+		exit(0);
+	for(i=1;i<=M.mu;i++) // 初始化矩阵T的行头指针向量;各行链表为空链表 
+		(*T).rhead[i]=NULL;
+	for(i=1;i<=M.nu;i++) // 初始化矩阵T的列头指针向量;各列链表为空链表 
+		(*T).chead[i]=NULL;
+	for(i=1;i<=M.mu;i++) // 按行复制 
+	{
+		p=M.rhead[i];
+		while(p) // 没到行尾 
+		{
+			q=(OLNode*)malloc(sizeof(OLNode)); // 生成结点 
+			if(!q)
+				exit(0);
+			q->i=p->i; // 给结点赋值 
+			q->j=p->j;
+			q->e=p->e;
+			if(!(*T).rhead[i]) // 插在行表头 
+				(*T).rhead[i]=q1=q;
+			else // 插在行表尾 
+				q1=q1->right=q;
+			if(!(*T).chead[q->j]) // 插在列表头 
+			{
+				(*T).chead[q->j]=q;
+				q->down=NULL;
+			}
+			else // 插在列表尾 
+			{
+				q2=(*T).chead[q->j];
+				while(q2->down)
+					q2=q2->down;
+				q2->down=q;
+				q->down=NULL;
+			}
+			p=p->right;
+		}
+		q->right=NULL;
+	}
+	return 1;
+}
+
+// 求稀疏矩阵的和Q=M+N
+int AddSMatrix(CrossList M,CrossList N,CrossList *Q)
+{
+	int i,k;
+	OLink p,pq,pm,pn;
+	OLink *col;
+	
+	if(M.mu!=N.mu||M.nu!=N.nu)
+	{
+		printf("两个矩阵不是同类型的,不能相加\n");
+		exit(0);
+	}
+	(*Q).mu=M.mu; // 初始化Q矩阵 
+	(*Q).nu=M.nu;
+	(*Q).tu=0; // 元素个数的初值 
+	(*Q).rhead=(OLink*)malloc(((*Q).mu+1)*sizeof(OLink));
+	if(!(*Q).rhead)
+		exit(0);
+	(*Q).chead=(OLink*)malloc(((*Q).nu+1)*sizeof(OLink));
+	if(!(*Q).chead)
+		exit(0);
+	for(k=1;k<=(*Q).mu;k++) // 初始化Q的行头指针向量;各行链表为空链表 
+		(*Q).rhead[k]=NULL;
+	for(k=1;k<=(*Q).nu;k++) // 初始化Q的列头指针向量;各列链表为空链表 
+		(*Q).chead[k]=NULL;
+	// 生成指向列的最后结点的数组 
+	col=(OLink*)malloc(((*Q).nu+1)*sizeof(OLink)); 
+	if(!col)
+		exit(0);
+	for(k=1;k<=(*Q).nu;k++) // 赋初值 
+		col[k]=NULL;
+	for(i=1;i<=M.mu;i++) // 按行的顺序相加 
+	{
+		pm=M.rhead[i];	// pm指向矩阵M的第i行的第1个结点 
+		pn=N.rhead[i];	// pn指向矩阵N的第i行的第1个结点 
+		while(pm&&pn)	// pm和pn均不空 
+		{
+			if(pm->j<pn->j) // 矩阵M当前结点的列小于矩阵N当前结点的列 
+			{
+				p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+				if(!p)
+					exit(0);
+				(*Q).tu++;	// 非零元素数加1 
+				p->i=i;		// 给结点赋值 
+				p->j=pm->j;
+				p->e=pm->e;
+				p->right=NULL;
+				pm=pm->right; // pm指针向右移 
+			}
+			else if(pm->j>pn->j)// 矩阵M当前结点的列大于矩阵N当前结点的列 
+			{
+				p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+				if(!p)
+					exit(0);
+				(*Q).tu++;	// 非零元素数加1 
+				p->i=i;		// 给结点赋值 
+				p->j=pn->j;
+				p->e=pn->e;
+				p->right=NULL;
+				pn=pn->right; // pn指针向右移 
+			}
+			// 矩阵M、N当前结点的列相等且两元素之和不为0
+			else if(pm->e+pn->e) 
+			{
+				p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+				if(!p)
+					exit(0);
+				(*Q).tu++; // 非零元素数加1 
+				p->i=i; // 给结点赋值 
+				p->j=pn->j;
+				p->e=pm->e+pn->e;
+				p->right=NULL;
+				pm=pm->right; // pm指针向右移 
+				pn=pn->right; // pn指针向右移 
+			}
+			else // 矩阵M、N当前结点的列相等且两元素之和为0 
+			{
+				pm=pm->right; // pm指针向右移 
+				pn=pn->right; // pn指针向右移 
+				continue;
+			}
+			if((*Q).rhead[i]==NULL) // p为该行的第1个结点
+				// p插在该行的表头且pq指向p(该行的最后一个结点) 
+				(*Q).rhead[i]=pq=p; 
+			else // 插在pq所指结点之后 
+			{
+				pq->right=p; // 完成行插入 
+				pq=pq->right; // pq指向该行的最后一个结点 
+			}
+			if((*Q).chead[p->j]==NULL) // p为该列的第1个结点
+				 // p插在该列的表头且col[p->j]指向p  
+				(*Q).chead[p->j]=col[p->j]=p;
+			else // 插在col[p->]所指结点之后 
+			{
+				col[p->j]->down=p; // 完成列插入
+				 // col[p->j]指向该列的最后一个结点 
+				col[p->j]=col[p->j]->down;
+			}
+		}
+		while(pm) // 将矩阵M该行的剩余元素插入矩阵Q 
+		{
+			p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+			if(!p)
+				exit(0);
+			(*Q).tu++; // 非零元素数加1 
+			p->i=i; // 给结点赋值 
+			p->j=pm->j;
+			p->e=pm->e;
+			p->right=NULL;
+			pm=pm->right; // pm指针向右移 
+			if((*Q).rhead[i] == NULL) // p为该行的第1个结点 
+				// p插在该行的表头且pq指向p(该行的最后一个结点)
+				(*Q).rhead[i] = pq = p;  
+			else // 插在pq所指结点之后 
+			{
+				pq->right=p; // 完成行插入 
+				pq=pq->right; // pq指向该行的最后一个结点 
+			}
+			if((*Q).chead[p->j] == NULL) // p为该列的第1个结点
+				 // p插在该列的表头且col[p->j]指向p 
+				(*Q).chead[p->j] = col[p->j] = p; 
+			else // 插在col[p->j]所指结点之后 
+			{
+				col[p->j]->down=p; // 完成列插入
+				// col[p->j]指向该列的最后一个结点 
+				col[p->j]=col[p->j]->down;  
+			}
+		}
+		while(pn) // 将矩阵N该行的剩余元素插入矩阵Q 
+		{
+			p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+			if(!p)
+				exit(0);
+			(*Q).tu++; // 非零元素数加1 
+			p->i=i; // 给结点赋值 
+			p->j=pn->j;
+			p->e=pn->e;
+			p->right=NULL;
+			pn=pn->right; // pm指针向右移 
+			if((*Q).rhead[i]==NULL) // p为该行的第1个结点 
+				// p插在该行的表头且pq指向p(该行的最后一个结点)
+				(*Q).rhead[i]=pq=p;  
+			else // 插在pq所指结点之后 
+			{
+				pq->right=p; // 完成行插入 
+				pq=pq->right; // pq指向该行的最后一个结点 
+			}
+			if((*Q).chead[p->j]==NULL) // p为该列的第1个结点
+				// p插在该列的表头且col[p->j]指向p  
+				(*Q).chead[p->j]=col[p->j]=p; 
+			else // 插在col[p->j]所指结点之后 
+			{
+				col[p->j]->down=p; // 完成列插入
+				// col[p->j]指向该列的最后一个结点 
+				col[p->j]=col[p->j]->down;  
+			}
+		}
+	}
+	for(k=1;k<=(*Q).nu;k++)
+		if(col[k]) // k列有结点 
+			col[k]->down=NULL; //  令该列最后一个结点的down指针为空 
+	free(col);
+	return 1;
+}
+
+//  求稀疏矩阵的差Q=M-N 
+int SubtSMatrix(CrossList M,CrossList N,CrossList *Q)
+{
+	int i,k;
+	OLink p,pq,pm,pn;
+	OLink *col;
+	
+	if(M.mu!=N.mu||M.nu!=N.nu)
+	{
+		printf("两个矩阵不是同类型的,不能相加\n");
+		exit(0);
+	}
+	(*Q).mu=M.mu; // 初始化Q矩阵 
+	(*Q).nu=M.nu;
+	(*Q).tu=0; // 元素个数的初值 
+	(*Q).rhead=(OLink*)malloc(((*Q).mu+1)*sizeof(OLink));
+	if(!(*Q).rhead)
+		exit(0);
+	(*Q).chead=(OLink*)malloc(((*Q).nu+1)*sizeof(OLink));
+	if(!(*Q).chead)
+		exit(0);
+	for(k=1;k<=(*Q).mu;k++) // 初始化Q的行头指针向量;各行链表为空链表 
+		(*Q).rhead[k]=NULL;
+	for(k=1;k<=(*Q).nu;k++) // 初始化Q的列头指针向量;各列链表为空链表 
+		(*Q).chead[k]=NULL;
+	// 生成指向列的最后结点的数组
+	col=(OLink*)malloc(((*Q).nu+1)*sizeof(OLink)); 
+	if(!col)
+		exit(0);
+	for(k=1;k<=(*Q).nu;k++) // 赋初值 
+		col[k]=NULL;
+	for(i=1;i<=M.mu;i++) // 按行的顺序相加 
+	{
+		pm=M.rhead[i]; // pm指向矩阵M的第i行的第1个结点 
+		pn=N.rhead[i]; // pn指向矩阵N的第i行的第1个结点 
+		while(pm&&pn) // pm和pn均不空 
+		{
+			if(pm->j<pn->j) // 矩阵M当前结点的列小于矩阵N当前结点的列 
+			{
+				p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+				if(!p)
+					exit(0);
+				(*Q).tu++; // 非零元素数加1 
+				p->i=i; // 给结点赋值 
+				p->j=pm->j;
+				p->e=pm->e;
+				p->right=NULL;
+				pm=pm->right; // pm指针向右移 
+			}
+			// 矩阵M当前结点的列大于矩阵N当前结点的列 
+			else if(pm->j>pn->j) 
+			{
+				p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+				if(!p)
+					exit(0);
+				(*Q).tu++; // 非零元素数加1 
+				p->i=i; // 给结点赋值 
+				p->j=pn->j;
+				p->e=-pn->e;
+				p->right=NULL;
+				pn=pn->right; // pn指针向右移 
+			}
+			else if(pm->e-pn->e) 
+			{
+				// 矩阵M、N当前结点的列相等且两元素之差不为0 
+				p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+				if(!p)
+					exit(0);
+				(*Q).tu++; // 非零元素数加1 
+				p->i=i; // 给结点赋值 
+				p->j=pn->j;
+				p->e=pm->e-pn->e;
+				p->right=NULL;
+				pm=pm->right; // pm指针向右移 
+				pn=pn->right; // pn指针向右移 
+			}
+			else // 矩阵M、N当前结点的列相等且两元素之差为0 
+			{
+				pm=pm->right; // pm指针向右移 
+				pn=pn->right; // pn指针向右移 
+				continue;
+			}
+			if((*Q).rhead[i]==NULL) // p为该行的第1个结点 
+				// p插在该行的表头且pq指向p(该行的最后一个结点)
+				(*Q).rhead[i]=pq=p;  
+			else // 插在pq所指结点之后 
+			{
+				pq->right=p; // 完成行插入 
+				pq=pq->right; // pq指向该行的最后一个结点 
+			}
+			if((*Q).chead[p->j]==NULL) // p为该列的第1个结点 
+				// p插在该列的表头且col[p->j]指向p
+				(*Q).chead[p->j]=col[p->j]=p;  
+			else // 插在col[p->]所指结点之后 
+			{
+				col[p->j]->down=p; // 完成列插入
+				// col[p->j]指向该列的最后一个结点 
+				col[p->j]=col[p->j]->down;  
+			}
+		}
+		while(pm) // 将矩阵M该行的剩余元素插入矩阵Q 
+		{
+			p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+			if(!p)
+				exit(0);
+			(*Q).tu++; // 非零元素数加1 
+			p->i=i; // 给结点赋值 
+			p->j=pm->j;
+			p->e=pm->e;
+			p->right=NULL;
+			pm=pm->right; // pm指针向右移 
+			if((*Q).rhead[i]==NULL) // p为该行的第1个结点 
+				// p插在该行的表头且pq指向p(该行的最后一个结点)
+				(*Q).rhead[i]=pq=p;  
+			else // 插在pq所指结点之后 
+			{
+				pq->right=p; // 完成行插入 
+				pq=pq->right; // pq指向该行的最后一个结点 
+			}
+			if((*Q).chead[p->j]==NULL) // p为该列的第1个结点
+				// p插在该列的表头且col[p->j]指向p  
+				(*Q).chead[p->j]=col[p->j]=p; 
+			else // 插在col[p->j]所指结点之后 
+			{
+				col[p->j]->down=p; // 完成列插入
+				// col[p->j]指向该列的最后一个结点 
+				col[p->j]=col[p->j]->down;  
+			}
+		}
+		while(pn) // 将矩阵N该行的剩余元素插入矩阵Q 
+		{
+			p=(OLink)malloc(sizeof(OLNode)); // 生成矩阵Q的结点 
+			if(!p)
+				exit(0);
+			(*Q).tu++; // 非零元素数加1 
+			p->i=i; // 给结点赋值 
+			p->j=pn->j;
+			p->e=-pn->e;
+			p->right=NULL;
+			pn=pn->right; // pm指针向右移 
+			if((*Q).rhead[i]==NULL) // p为该行的第1个结点 
+				// p插在该行的表头且pq指向p(该行的最后一个结点)
+				(*Q).rhead[i]=pq=p;  
+			else // 插在pq所指结点之后 
+			{
+				pq->right=p; // 完成行插入 
+				pq=pq->right; // pq指向该行的最后一个结点 
+			}
+			if((*Q).chead[p->j]==NULL) // p为该列的第1个结点
+				// p插在该列的表头且col[p->j]指向p 
+				(*Q).chead[p->j]=col[p->j]=p;  
+			else // 插在col[p->j]所指结点之后 
+			{
+				col[p->j]->down=p; // 完成列插入
+				// col[p->j]指向该列的最后一个结点  
+				col[p->j]=col[p->j]->down; 
+			}
+		}
+	}
+   	for(k=1;k<=(*Q).nu;k++)
+	   	if(col[k]) // k列有结点 
+		   	col[k]->down=NULL; // 令该列最后一个结点的down指针为空 
+   	free(col);
+   	return 1;
+}
+
+// 求稀疏矩阵乘积Q=M*N 
+int MultSMatrix(CrossList M,CrossList N,CrossList *Q)
+{
+	int i,j,e;
+	OLink q,p0,q0,q1,q2;
+	
+	InitSMatrix(Q);
+	(*Q).mu=M.mu;
+	(*Q).nu=N.nu;
+	(*Q).tu=0;
+	(*Q).rhead=(OLink*)malloc(((*Q).mu+1)*sizeof(OLink));
+	if(!(*Q).rhead)
+		exit(0);
+	(*Q).chead=(OLink*)malloc(((*Q).nu+1)*sizeof(OLink));
+	if(!(*Q).chead)
+		exit(0);
+	for(i=1;i<=(*Q).mu;i++) // 初始化矩阵Q的行头指针向量;各行链表为空链表 
+		(*Q).rhead[i]=NULL;
+	for(i=1;i<=(*Q).nu;i++) // 初始化矩阵Q的列头指针向量;各列链表为空链表 
+		(*Q).chead[i]=NULL;
+	for(i=1;i<=(*Q).mu;i++)
+		for(j=1;j<=(*Q).nu;j++)
+		{
+			p0=M.rhead[i];
+			q0=N.chead[j];
+			e=0;
+			while(p0&&q0)
+			{
+				if(q0->i<p0->j)
+					q0=q0->down; // 列指针后移 
+				else if(q0->i>p0->j)
+					p0=p0->right; // 行指针后移 
+				else // q0->i==p0->j 
+				{
+					e+=p0->e*q0->e; // 乘积累加 
+					q0=q0->down; // 行列指针均后移 
+					p0=p0->right;
+				}
+			}
+			if(e) // 值不为0 
+			{
+				(*Q).tu++; // 非零元素数加1 
+				q=(OLink)malloc(sizeof(OLNode)); // 生成结点 
+				if(!q) // 生成结点失败 
+					exit(0);
+				q->i=i; // 给结点赋值 
+				q->j=j;
+				q->e=e;
+				q->right=NULL;
+				q->down=NULL;
+				if(!(*Q).rhead[i]) // 行表空时插在行表头 
+					(*Q).rhead[i]=q1=q;
+				else // 否则插在行表尾 
+					q1=q1->right=q;
+				if(!(*Q).chead[j]) // 列表空时插在列表头 
+					(*Q).chead[j]=q;
+				else // 否则插在列表尾 
+				{
+					q2=(*Q).chead[j]; // q2指向j行第1个结点 
+					while(q2->down)
+						q2=q2->down; // q2指向j行最后1个结点 
+					q2->down=q;
+				}
+			}
+		}
+		return 1;
+}
+
+//  求稀疏矩阵M的转置矩阵T 
+int TransposeSMatrix(CrossList M,CrossList *T)
+{
+	int u,i;
+	OLink *head,p,q,r;
+	
+	if((*T).rhead)
+		DestroySMatrix(T);
+	CopySMatrix(M,T); // T=M 
+	u=(*T).mu; // 交换(*T).mu和(*T).nu 
+	(*T).mu=(*T).nu;
+	(*T).nu=u;
+	head=(*T).rhead; // 交换(*T).rhead和(*T).chead 
+	(*T).rhead=(*T).chead;
+	(*T).chead=head;
+	for(u=1;u<=(*T).mu;u++) // 对T的每一行 
+	{
+		p=(*T).rhead[u]; // p为行表头 
+		while(p) // 没到表尾,对T的每一结点 
+		{
+			q=p->down; // q指向下一个结点 
+			i=p->i; // 交换.i和.j 
+			p->i=p->j;
+			p->j=i;
+			r=p->down; // 交换.down.和right 
+			p->down=p->right;
+			p->right=r;
+			p=q; // p指向下一个结点 
+		}
+	}
+	return 1;
+}
+
+
+int main()
+{
+	CrossList A,B,C;
+	
+	InitSMatrix(&A); // CrossList类型的变量在初次使用之前必须初始化 
+	InitSMatrix(&B);
+	
+	printf("创建矩阵A: ");
+	CreateSMatrix(&A);
+	PrintSMatrix(A);
+	
+	printf("由矩阵A复制矩阵B: ");
+	CopySMatrix(A,&B);
+	PrintSMatrix(B);
+	
+	DestroySMatrix(&B); // CrossList类型的变量在再次使用之前必须先销毁 
+	
+	printf("销毁矩阵B后:\n");
+	PrintSMatrix(B);
+	
+	printf("创建矩阵B2:(与矩阵A的行、列数相同，行、列分别为%d,%d)\n",
+		A.mu,A.nu);
+	CreateSMatrix(&B);
+	PrintSMatrix(B);
+	printf("矩阵C1(A+B): ");
+	
+	AddSMatrix(A,B,&C);
+	
+	PrintSMatrix(C);
+	DestroySMatrix(&C);
+	printf("矩阵C2(A-B): ");
+	
+	SubtSMatrix(A,B,&C);
+	
+	PrintSMatrix(C);
+	DestroySMatrix(&C);
+	
+	printf("矩阵C3(A的转置): ");
+	
+	TransposeSMatrix(A,&C);
+	
+	PrintSMatrix(C);
+	
+	DestroySMatrix(&A);
+	DestroySMatrix(&B);
+	DestroySMatrix(&C);
+	
+	printf("创建矩阵A2: ");
+	CreateSMatrix(&A);
+	PrintSMatrix(A);
+	
+	printf("创建矩阵B3:(行数应与矩阵A2的列数相同=%d)\n",A.nu);
+	CreateSMatrix(&B);
+	PrintSMatrix(B);
+	printf("矩阵C5(A*B): ");
+	
+	MultSMatrix(A,B,&C);
+	
+	PrintSMatrix(C);
+	
+	DestroySMatrix(&A);
+	DestroySMatrix(&B);
+	DestroySMatrix(&C);
+	
+	system("pause");
+	return 0; 
+}
+
+/*
+输出效果： 
+
+创建矩阵A: 请输入稀疏矩阵的行数 列数 非零元个数:(space) 3 3 3
+请按任意次序输入3个非零元的行 列 元素值:（空格）
+1 1 1
+2 2 2
+3 3 3
+3行3列3个非零元素
+请输入选择(1.按行输出 2.按列输出): 1
+1行1列值为1
+2行2列值为2
+3行3列值为3
+由矩阵A复制矩阵B: 3行3列3个非零元素
+请输入选择(1.按行输出 2.按列输出): 2
+1行1列值为1
+2行2列值为2
+3行3列值为3
+销毁矩阵B后:
+0行0列0个非零元素
+请输入选择(1.按行输出 2.按列输出): 1
+创建矩阵B2:(与矩阵A的行、列数相同，行、列分别为3,3)
+请输入稀疏矩阵的行数 列数 非零元个数:(space) 3 3 2
+请按任意次序输入2个非零元的行 列 元素值:（空格）
+1 2 1
+3 2 1
+3行3列2个非零元素
+请输入选择(1.按行输出 2.按列输出): 2
+1行2列值为1
+3行2列值为1
+矩阵C1(A+B): 3行3列5个非零元素
+请输入选择(1.按行输出 2.按列输出): 3 3 2
+矩阵C2(A-B): 3行3列5个非零元素
+请输入选择(1.按行输出 2.按列输出): 矩阵C3(A的转置): 3行3列3个非零元素
+请输入选择(1.按行输出 2.按列输出): 1行1列值为1
+2行2列值为2
+3行3列值为3
+创建矩阵A2: 请输入稀疏矩阵的行数 列数 非零元个数:(space) 3 3 2
+请按任意次序输入2个非零元的行 列 元素值:（空格）
+1 2 2
+1 3 2
+3行3列2个非零元素
+请输入选择(1.按行输出 2.按列输出): 1
+1行2列值为2
+1行3列值为2
+创建矩阵B3:(行数应与矩阵A2的列数相同=3)
+请输入稀疏矩阵的行数 列数 非零元个数:(space) 3 3 1
+请按任意次序输入1个非零元的行 列 元素值:（空格）
+3 2 1
+3行3列1个非零元素
+请输入选择(1.按行输出 2.按列输出): 1
+3行2列值为1
+矩阵C5(A*B): 3行3列1个非零元素
+请输入选择(1.按行输出 2.按列输出): 1
+1行2列值为2
+请按任意键继续. . .
+
+
+*/

@@ -1,0 +1,296 @@
+/*
+	数据结构C语言版 非循环顺序队列求解迷宫问题 
+	利用非循环顺序队列采用广度搜索法求解迷宫问题(一条路径)
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月12日 
+*/
+
+#include <stdio.h>
+#include <malloc.h> 
+
+#define M 5 // 迷宫行数(包括外墙) 
+#define N 5 // 迷宫列数(包括外墙) 
+#define D 4 // 移动方向数,只能取4和8。(8个,可斜行;4个,只可直走) 
+
+
+// 移动数组,移动方向由正东起顺时针转
+struct
+{
+	int x,y;
+
+#if D==8
+}move[D]={{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1}};
+#endif
+
+#if D==4
+}move[D]={{0,1},{1,0},{0,-1},{-1,0}};
+#endif
+
+// 定义栈元素类型和队列元素类型，两者为相同类型。 
+typedef struct 
+{
+	int x,y; // 当前点的行值，列值
+	int pre; // 前一点在队列中的序号 
+} SElemType, QElemType; 
+
+#define STACK_INIT_SIZE 10	// 存储空间初始分配量 
+#define STACKINCREMENT 2	// 存储空间分配增量 
+// 栈的顺序存储表示 P46 
+typedef struct SqStack
+{
+	SElemType *base;	// 在栈构造之前和销毁之后，base的值为NULL 
+	SElemType *top;		// 栈顶指针 
+	int stacksize;		// 当前已分配的存储空间，以元素为单位 
+}SqStack;	// 顺序栈
+
+// 顺序队列(非循环，因为是非循环的，所以需要判断是否溢出
+#define MAXQSIZE 5 // 最大队列长度(对于循环队列，最大队列长度要减1) 
+typedef struct
+{
+	QElemType *base;// 初始化的动态分配存储空间 相当于一个数组 
+	// 头指针,若队列不空,指向队列头元素，相当于一个数组下标
+	int front;
+	// 尾指针,若队列不空,指向队列尾元素的下一个位置 相当于一个数组下标
+	int rear;
+}SqQueue;
+
+
+
+
+
+// 构造一个空队列Q
+int InitQueue(SqQueue *Q)
+{ 
+	//分配定长的空间，相当于一个数组
+	(*Q).base=(QElemType *)malloc(MAXQSIZE*sizeof(QElemType));
+	if(!(*Q).base) // 存储分配失败 
+		exit(0);
+	(*Q).front=(*Q).rear=0;	//初始化下标
+	return 1;
+}
+
+// 销毁队列Q,Q不再存在
+int DestroyQueue(SqQueue *Q)
+{ 
+	if((*Q).base)
+		free((*Q).base);
+	(*Q).base=NULL;
+	(*Q).front=(*Q).rear=0;
+	return 1;
+}
+
+
+// 若队列Q为空队列,则返回1,否则返回0 
+int QueueEmpty(SqQueue Q)
+{
+	if(Q.front==Q.rear) // 队列空的标志 
+		return 1;
+	else
+		return 0;
+}
+
+// 插入元素e为Q的新的队尾元素 
+int EnQueue(SqQueue *Q,QElemType e)
+{
+	if((*Q).rear>=MAXQSIZE)
+	{ // 队列满，增加1个存储单元 
+		(*Q).base=(QElemType *)realloc((*Q).base,
+			((*Q).rear+1)*sizeof(QElemType));
+		if(!(*Q).base) // 增加单元失败 
+			return 0;
+	}
+	*((*Q).base+(*Q).rear)=e;
+	(*Q).rear++;
+	return 1;
+}
+
+// 若队列不空,则删除Q的队头元素,用e返回其值,并返回1,否则返回0 
+int DeQueue(SqQueue *Q,QElemType *e)
+{
+	if((*Q).front==(*Q).rear) // 队列空 
+		return 0;
+	*e=(*Q).base[(*Q).front];
+	(*Q).front=(*Q).front+1;
+	return 1;
+}
+
+//	构造一个空栈S。
+int InitStack(SqStack *S)
+{
+	// 为栈底分配一个指定大小的存储空间
+	(*S).base = (SElemType *)malloc(STACK_INIT_SIZE*sizeof(SElemType));
+	if( !(*S).base )
+		exit(0);		// 存储分配失败 
+	(*S).top = (*S).base;	// 栈底与栈顶相同表示一个空栈
+	(*S).stacksize = STACK_INIT_SIZE;
+	return 1;
+}
+
+// 若栈S为空栈（栈顶与栈底相同的），则返回1，否则返回0。
+int StackEmpty(SqStack S)
+{
+	if(S.top == S.base)
+		return 1;
+	else
+		return 0;
+}
+
+//	插入元素e为新的栈顶元素。
+int Push(SqStack *S, SElemType e)
+{
+	if((*S).top - (*S).base >= (*S).stacksize)	// 栈满，追加存储空间 
+	{
+		(*S).base = (SElemType *)realloc((*S).base, 
+			((*S).stacksize + STACKINCREMENT) * sizeof(SElemType));
+		if( !(*S).base )
+			exit(0); // 存储分配失败 
+		(*S).top = (*S).base+(*S).stacksize;
+		(*S).stacksize += STACKINCREMENT;
+	}
+	*((*S).top)++=e;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	return 1;
+}
+
+//	若栈不空，则删除S的栈顶元素，用e返回其值，并返回1；否则返回0。
+int Pop(SqStack *S,SElemType *e)
+{
+	if((*S).top == (*S).base)
+		return 0;
+	*e = *--(*S).top;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	return 1;
+}
+
+
+// 广度搜索法求一条迷宫路径
+int Path(int maze[M][N]) 
+{
+	SqQueue q;	// 采用非循环顺序队列 
+	QElemType qf,qt;	// 当前点和下一点 
+	SqStack s;	// 采用顺序栈 
+	int i,j,flag=1;	// 当找到出口,flag=0 
+	int x1, y1;		// 终点的坐标 
+	
+	printf("请输入入口的行,列(左上角为1,1)\n");
+	scanf("%d,%d",&qf.x, &qf.y);
+	printf("请输入出口的行,列(右下角为%d,%d)\n",M-2, N-2);
+	scanf("%d,%d",&x1, &y1);
+	
+	qf.pre = -1; // 设入口(第一点)的上一点的序号=-1 
+	maze[qf.x][qf.y] = -1; // 初始点设为-1(已访问过) 
+	InitQueue(&q);
+	EnQueue(&q,qf); // 起点入队 
+	while(!QueueEmpty(q)&&flag)
+	{
+		// 队列中还有没被广度搜索过的点且还没找到出口 
+		DeQueue(&q,&qf); // 出队qf为当前点 
+		for(i=0;i<D;i++) // 向各个方向尝试 
+		{
+			qt.x=qf.x+move[i].x; // 下一点的坐标 
+			qt.y=qf.y+move[i].y;
+			if(maze[qt.x][qt.y] == 1)
+			{
+				// 此点是通道且不曾被访问过 
+				maze[qt.x][qt.y] = -1; // 已访问过 
+				// 上一点处于队列中现队头减一的位置(没删除) 
+				qt.pre=q.front-1; 
+				EnQueue(&q,qt); // 入队 
+				if(qt.x==x1&&qt.y==y1) // 到达终点 
+				{
+					flag=0;
+					break;
+				}
+			}
+		}
+	}
+	if(flag) // 搜索完整个队列还没到达终点 
+	{
+		printf("没有路径可到达终点！\n");
+		return 0;
+	}
+	else
+	{
+		InitStack(&s);	// 初始化s栈 
+		i=q.rear-1;		// i为待入栈元素在队列中的位置 
+		while(i>=0)		// 没到入口 
+		{
+			Push(&s,*(q.base+i));
+			i=(*(q.base+i)).pre; // i为前一元素在队列中的位置 
+		}
+		i=0; // i为走出迷宫的步骤 
+		while(!StackEmpty(s))
+		{
+			Pop(&s,&qf);
+			i++;
+			maze[qf.x][qf.y]=i;
+		}
+		printf("走出迷宫的一个方案：\n");
+		for(i=1;i<M-1;i++) // 输出maze[][],其值是走出迷宫的步骤 
+		{
+			for(j=1;j<N-1;j++)
+				printf("%3d",maze[i][j]);
+			printf("\n");
+		}
+		return 1;
+	}
+}
+
+int main()
+{
+	int i,j;
+	int maze[M][N]; // 迷宫数组 
+	
+	printf("%d行%d列迷宫(不包括外墙)\n",M-2,N-2);
+	for(i=0;i<N;i++)
+	{ // 0为墙,1为通道 
+		maze[0][i]=0;	// 北墙 
+		maze[M-1][i]=0; // 南墙 
+	}
+	for(i=1;i<M-1;i++)
+	{
+		maze[i][0]=0;	// 西墙 
+		maze[i][N-1]=0; // 东墙 
+	}
+	printf("请按行输入迷宫结构(不包括周边,0为墙,1为通道),如1 0 0 1\n");
+	for(i=1;i<M-1;i++)
+		for(j=1;j<N-1;j++)
+			scanf("%d",&maze[i][j]);
+	printf("迷宫结构(包括外墙):\n");
+	for(i=0;i<M;i++)
+	{
+		for(j=0;j<N;j++)
+			printf("%3d",maze[i][j]);
+		printf("\n");
+	}
+	Path(maze);
+	
+	system("pause");
+	return 0; 
+}
+
+/*
+输出效果：
+
+3行3列迷宫(不包括外墙)
+请按行输入迷宫结构(不包括周边,0为墙,1为通道),如1 0 0 1
+1 0 1
+1 1 1
+1 0 1
+迷宫结构(包括外墙):
+  0  0  0  0  0
+  0  1  0  1  0
+  0  1  1  1  0
+  0  1  0  1  0
+  0  0  0  0  0
+请输入入口的行,列(左上角为1,1)
+1,1
+请输入出口的行,列(右下角为3,3)
+3,3
+走出迷宫的一个方案：
+  1  0  1
+  2  3  4
+ -1  0  5
+请按任意键继续. . . 
+
+*/

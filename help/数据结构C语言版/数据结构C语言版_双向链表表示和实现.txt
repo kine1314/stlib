@@ -1,0 +1,312 @@
+/*
+	数据结构C语言版 双向链表表示和实现
+	P36-P37 
+	编译环境：Dev-C++ 4.9.9.2
+	日期： 2011年2月10日 
+*/
+#include <stdio.h>
+#include <malloc.h>
+#include <stdlib.h>
+
+typedef int ElemType;
+
+// 线性表的双向链表存储结构 
+typedef struct DuLNode
+{
+	ElemType data;	//数据域
+	struct DuLNode *prior,*next;	//前驱后继指针
+}DuLNode,*DuLinkList;
+
+// 产生空的双向循环链表L
+int InitList(DuLinkList *L)
+{ 
+	*L=(DuLinkList)malloc(sizeof(DuLNode));	// *L指向头结点
+	if(*L)
+	{
+		// 将头结点的前驱后继都指向头结点，这样构成了一个空表
+		(*L)->next=(*L)->prior=*L;
+
+		return 1;
+	}
+	else
+		return 0;
+}
+
+// 销毁双向循环链表L
+int DestroyList(DuLinkList *L)
+{
+	DuLinkList q,p=(*L)->next; // p指向第一个结点 
+	while(p!=*L) // p没到表头 
+	{
+		q=p->next;
+		free(p);
+		p=q;
+	}
+	free(*L);
+	*L=NULL;
+	return 1;
+}
+
+// 将L重置为空表
+int ClearList(DuLinkList L)
+{
+	DuLinkList q,p=L->next; // p指向第一个结点 
+	while(p!=L) // p没到表头 
+	{
+		q=p->next;
+		free(p);
+		p=q;
+	}
+	L->next=L->prior=L; // 头结点的两个指针域均指向自身，构成空表 
+	return 1;
+}
+
+// 若L为空表（空表就是头结点的前驱后继都指向头结点），则返回1，否则返回0 
+int ListEmpty(DuLinkList L)
+{
+	if(L->next==L&&L->prior==L)
+		return 1;
+	else
+		return 0;
+}
+
+// 返回L中数据元素个数
+int ListLength(DuLinkList L)
+{
+	int i=0;
+	DuLinkList p=L->next; // p指向第一个结点 
+	while(p!=L) // p没到表头 
+	{
+		i++;
+		p=p->next;
+	}
+	return i;
+}
+
+// 当第i个元素存在时,其值赋给e并返回1,否则返回0
+int GetElem(DuLinkList L,int i,ElemType *e)
+{
+	int j=1; // j为计数器 
+	DuLinkList p=L->next; // p指向第一个结点 
+	while(p!=L&&j<i) // 顺指针向后查找,直到p指向第i个元素或p指向头结点 
+	{
+		p=p->next;
+		j++;
+	}
+	if(p==L||j>i) // 第i个元素不存在 
+		return 0;
+	*e=p->data; // 取第i个元素 
+	return 1;
+}
+// 返回L中第1个与e满足关系compare()的数据元素的位序。 
+// 若这样的数据元素不存在，则返回值为0 
+int LocateElem(DuLinkList L,ElemType e,int(*compare)(ElemType,ElemType))
+{
+	int i=0;
+	DuLinkList p=L->next; // p指向第1个元素 
+	while(p!=L)
+	{
+		i++;
+		if(compare(p->data,e)) // 找到这样的数据元素 
+			return i;
+		p=p->next;
+	}
+	return 0;
+}
+
+// 若cur_e是L的数据元素，且不是第一个，则用pre_e返回它的前驱
+int PriorElem(DuLinkList L,ElemType cur_e,ElemType *pre_e)
+{	
+	DuLinkList p=L->next->next; // p指向第2个元素 
+	while(p!=L) // p没到表头 
+	{
+		if(p->data==cur_e)
+		{
+			*pre_e=p->prior->data;
+			return 1;
+		}
+		p=p->next;
+	}
+	return 0;
+}
+
+// 若cur_e是L的数据元素，且不是最后一个，则用next_e返回它的后继
+int NextElem(DuLinkList L,ElemType cur_e,ElemType *next_e)
+{	
+	DuLinkList p=L->next->next; // p指向第2个元素 
+	while(p!=L) // p没到表头 
+	{
+		if(p->prior->data==cur_e)
+		{
+			*next_e=p->data;
+			return 1;
+		}
+		p=p->next;
+	}
+	return 0;
+}
+
+// 在双向链表L中返回第i个元素的位置指针(算法2.18、2.19要调用的函数) 
+DuLinkList GetElemP(DuLinkList L,int i)
+{
+	int j;
+	DuLinkList p=L;
+	for(j=1;j<=i;j++)
+		p=p->next;
+	return p;
+}
+
+// 改进算法2.18  P36
+// 在带头结点的双链循环线性表L中第i个位置之前插入元素e，
+// i的合法值为1≤i≤表长+1 
+int ListInsert(DuLinkList L,int i,ElemType e)
+{
+	DuLinkList p,s;
+	if(i<1||i>ListLength(L)+1) // i值不合法 
+		return 0;
+	p=GetElemP(L,i-1); // 在L中确定第i-1个元素的位置指针p 
+	if(!p) // p=NULL,即第i-1个元素不存在 
+		return 0;
+	s=(DuLinkList)malloc(sizeof(DuLNode));
+	if(!s)
+		return 0;
+	s->data=e; // 在第i-1个元素之后插入 
+	s->prior=p;
+	s->next=p->next;
+	p->next->prior=s;
+	p->next=s;
+	return 1;
+}
+
+// 算法2.19 P37 
+// 删除带头结点的双链循环线性表L的第i个元素,i的合法值为1≤i≤表长+1 
+int ListDelete(DuLinkList L,int i,ElemType *e) 
+{
+	DuLinkList p;
+	if(i<1||i>ListLength(L)) // i值不合法 
+		return 0;
+	p=GetElemP(L,i);  // 在L中确定第i个元素的位置指针p 
+	if(!p) // p=NULL,即第i个元素不存在 
+		return 0;
+	*e=p->data;
+	p->prior->next=p->next;
+	p->next->prior=p->prior;
+	free(p);
+	return 1;
+}
+
+// 由双链循环线性表L的头结点出发,正序对每个数据元素调用函数visit() 
+void ListTraverse(DuLinkList L,void(*visit)(ElemType))
+{
+	DuLinkList p=L->next; // p指向头结点 
+	while(p!=L)
+	{
+		visit(p->data);
+		p=p->next;
+	}
+	printf("\n");
+}
+
+// 由双链循环线性表L的头结点出发,逆序对每个数据元素调用函数visit()
+void ListTraverseBack(DuLinkList L,void(*visit)(ElemType))
+{
+	DuLinkList p=L->prior; // p指向尾结点 
+	while(p!=L)
+	{
+		visit(p->data);
+		p=p->prior;
+	}
+	printf("\n");
+}
+
+// 数据元素判定函数(判定相等)
+int compare(ElemType c1,ElemType c2) 
+{
+	if(c1==c2)
+		return 1;
+	else
+		return 0;
+}
+
+void vd(ElemType c) // ListTraverse()调用的函数(类型一致) 
+{
+	printf("%d ",c);
+}
+
+int main()
+{
+	DuLinkList L;
+	int i,n;
+	int j;
+	ElemType e;
+	
+	InitList(&L);
+	for(i=1;i<=5;i++)
+		ListInsert(L,i,i); // 在第i个结点之前插入i 
+	printf("正序输出链表：");
+	ListTraverse(L,vd); // 正序输出 
+	printf("逆序输出链表：");
+	ListTraverseBack(L,vd); // 逆序输出 
+	
+	n=2;
+	ListDelete(L,n,&e); // 删除并释放第n个结点 
+	printf("删除第%d个结点，值为%d，其余结点为：",n,e);
+	ListTraverse(L,vd); // 正序输出 
+	
+	printf("链表的元素个数为%d\n",ListLength(L));
+	printf("链表是否空：%d(1:是 0:否)\n",ListEmpty(L));
+	ClearList(L); // 清空链表 
+	printf("清空后，链表是否空：%d(1:是 0:否)\n",ListEmpty(L));
+
+	for(i=1;i<=5;i++)
+		ListInsert(L,i,i); // 重新插入5个结点 
+	ListTraverse(L,vd); // 正序输出 
+	
+	n=3;
+	j=GetElem(L,n,&e); // 将链表的第n个元素赋值给e 
+	if(j)
+		printf("链表的第%d个元素值为%d\n",n,e);
+	else
+		printf("不存在第%d个元素\n",n);
+	
+	n=4;
+	i=LocateElem(L,n,compare);
+	if(i)
+		printf("等于%d的元素是第%d个\n",n,i);
+	else
+		printf("没有等于%d的元素\n",n);
+	
+	j=PriorElem(L,n,&e);
+	if(j)
+		printf("%d的前驱是%d\n",n,e);
+	else
+		printf("不存在%d的前驱\n",n);
+	
+	j=NextElem(L,n,&e);
+	if(j)
+		printf("%d的后继是%d\n",n,e);
+	else
+		printf("不存在%d的后继\n",n);
+	
+	DestroyList(&L);
+	
+	system("pause");
+	return 0;
+}
+/*
+输出效果：
+
+正序输出链表：1 2 3 4 5
+逆序输出链表：5 4 3 2 1
+删除第2个结点，值为2，其余结点为：1 3 4 5
+链表的元素个数为4
+链表是否空：0(1:是 0:否)
+清空后，链表是否空：1(1:是 0:否)
+1 2 3 4 5
+链表的第3个元素值为3
+等于4的元素是第4个
+4的前驱是3
+4的后继是5
+请按任意键继续. . .
+ 
+*/

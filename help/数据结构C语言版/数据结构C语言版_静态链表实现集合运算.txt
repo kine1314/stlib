@@ -1,0 +1,456 @@
+#include <stdio.h>
+/*
+	数据结构C语言版 静态链表实现集合运算
+	P33-34 
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月10日 
+*/
+
+typedef char ElemType;
+
+#define MAXSIZE 100 // 链表的最大长度 
+
+// 线性表的静态单链表存储结构
+typedef struct
+{
+	ElemType data;	//存储数据，数据域
+	int cur;		//游标指示器cur，代替指针指示结点在数组中的位置
+}component,SLinkList[MAXSIZE];
+
+// 算法2.14 P33
+// 将一维数组L中各分量链成一个备用链表，L[0].cur为头指针，
+// L[0]无数据域。“0”表示空指针 
+void InitSpace(SLinkList L)
+{
+	int i;
+	for(i=0;i<MAXSIZE-1;i++)
+		L[i].cur=i+1;
+	L[MAXSIZE-1].cur=0;
+}
+
+// 算法2.15  P33
+// 若备用链表非空,则返回分配的结点下标(备用链表的第一个结点),否则返回0 
+int Malloc(SLinkList space)
+{
+	int i=space[0].cur;
+	if(i)	// 备用链表非空 
+		// 备用链表的头结点指向原备用链表的第二个结点，因为第一个结点
+		// 已经被使用了，不加入备用链表中 
+		space[0].cur=space[i].cur;
+	return i; // 返回新开辟结点的坐标 
+}
+
+// 构造一个空链表，返回值为空表在数组中的位序 
+int InitList(SLinkList L)
+{
+	int i;
+	i=Malloc(L);	// 调用Malloc()，简化程序 
+	L[i].cur=0;		// 空链表的表头指针为空(0)，头指针无数据域 
+	return i;
+}
+
+// 将此表重置为空表，即将这个链表转化为备用表的一部分
+int ClearList(SLinkList L,int n)
+{
+	int j,k,
+		i=L[n].cur; // 链表第一个结点的位置 
+	L[n].cur=0; // 将链表置空 
+	k=L[0].cur; // 备用链表第一个结点的位置 
+	L[0].cur=i; // 把链表的结点连到备用链表的表头 
+	while(i) // 没到链表尾 
+	{
+		j=i;
+		i=L[i].cur; // 指向下一个元素 
+	}
+	L[j].cur=k; // 把原备用链表的第一个结点接到原链表的尾部，
+	// 最终构成的备用链表为以原来链表的头结点为第一个结点的备用
+	// 链表（即原链表+原备用链表） 
+	return 1;
+}
+
+// 判断L中表头位序为n的链表是否空,若是空则是空表返回1;否则返回0 
+int ListEmpty(SLinkList L,int n)
+{
+	if(L[n].cur==0) // 空表 
+		return 1;
+	else
+		return 0;
+}
+
+// 返回L中表头位序为n的链表的数据元素个数
+int ListLength(SLinkList L,int n)
+{ 
+	int j=0,
+		i=L[n].cur; // i指向第一个元素 
+	while(i) // 没到静态链表尾 
+	{
+		i=L[i].cur; // 指向下一个元素 
+		j++;
+	}
+	return j;
+}
+
+// 用e返回L中表头位序为n的链表的第i个元素的值
+int GetElem(SLinkList L,int n, int i,ElemType *e)
+{ 
+	int l,
+		k=n; // k指向表头序号 
+	if(i<1||i>ListLength(L,n)) // i值不合理 
+		return 0;
+	for(l=1;l<=i;l++) // 移动i-1个元素 
+		k=L[k].cur;
+	*e=L[k].data;	//此时k指向第i个元素的位置
+	return 1;
+}
+
+// 在L中表头位序为n的静态单链表中查找第1个值为e的元素。 
+// 若找到，则返回它在L中的位序，否则返回0 
+int LocateElem(SLinkList L,int n,ElemType e)
+{	
+	int i = L[n].cur;	// i指示表中第一个结点 
+	while(i&&L[i].data!=e)	// 在表中顺链查找(e不能是字符串) 
+		i=L[i].cur;
+	return i;
+}
+
+// 若cur_e是此单链表的数据元素，且不是第一个
+int PriorElem(SLinkList L,int n,ElemType cur_e,ElemType *pre_e)
+{ 
+	int j,i=L[n].cur; // i为链表第一个结点的位置 
+	do
+	{ // 先向后移动结点，然后再进行判断 
+		j=i;
+		i=L[i].cur;
+	}while(i&&cur_e!=L[i].data);
+	if(i) // 找到该元素 
+	{
+		*pre_e=L[j].data;
+		return 1;
+	}
+	return 0;
+}
+
+// 若cur_e是此单链表的数据元素，且不是最后一个
+int NextElem(SLinkList L,int n,ElemType cur_e,ElemType *next_e)
+{	 
+	int i;
+	i=LocateElem(L,n,cur_e); // 在链表中查找第一个值为cur_e的元素的位置 
+	if(i) // 在静态单链表中存在元素cur_e 
+	{
+		i=L[i].cur; // cur_e的后继的位置 
+		if(i) // cur_e有后继 
+		{
+			*next_e=L[i].data;
+			return 1; // cur_e元素有后继 
+		}
+	}
+	return 0; // L不存在cur_e元素,cur_e元素无后继 
+}
+// 算法2.16 P33
+// 将下标为k的空闲结点回收到备用链表(成为备用链表的第一个结点) 
+void Free(SLinkList space,int k) 
+{
+	// 回收结点的＂游标＂指向备用链表的第一个结点 
+	space[k].cur=space[0].cur;
+	space[0].cur=k;	// 备用链表的头结点指向新回收的结点 
+}
+
+void DestroyList()
+{
+	// 静态数组不能被销毁 
+}
+
+// 在L中表头位序为n的链表的第i个元素之前插入新的数据元素e 
+int ListInsert(SLinkList L,int n,int i,ElemType e)
+{
+	int l,j,
+		k=n; // k指向表头 
+	if(i<1||i>ListLength(L,n)+1)
+		return 0;
+	j=Malloc(L); // 申请新单元 
+	if(j) // 申请成功 
+	{
+		L[j].data=e; // 赋值给新单元 
+		for(l=1;l<i;l++) // 移动i-1个元素 
+			k=L[k].cur;
+		L[j].cur=L[k].cur;
+		L[k].cur=j;
+		return 1;
+	}
+	return 0;
+}
+
+// 删除在L中表头位序为n的链表的第i个数据元素e，并返回其值 
+int ListDelete(SLinkList L,int n,int i,ElemType *e)
+{
+	int j,
+		k=n; // k指向表头 
+	if(i<1||i>ListLength(L,n))
+		return 0;
+	for(j=1;j<i;j++) // 移动i-1个元素 
+		k=L[k].cur;
+	j=L[k].cur;
+	L[k].cur=L[j].cur;
+	*e=L[j].data;
+	Free(L,j);
+	return 1;
+}
+
+// 算法2.17 P34
+// 依次输入集合A和B的元素，在一维数组space中建立表示集合(A-B)∪(B-A)
+// 的静态链表，S为其头指针。假设备用空间足够大，space[0].cur为备用空
+// 间的头指针 
+void difference1(SLinkList space,int *S) 
+{	
+	int r,p,m,n,i,j,k;
+	ElemType b;
+	
+	InitSpace(space); // 初始化备用空间 
+	*S=Malloc(space); // 生成S的头结点 
+	r=*S; // r指向S的当前最后结点 
+
+	printf("请输入集合A和B的元素个数m,n:(空格隔开)\n");
+	scanf("%d %d%*c",&m,&n); // %*c吃掉回车符 
+	printf("请输入集合A的元素（共%d个）:(空格隔开)\n",m);
+	for(j=1;j<=m;j++) // 建立集合A的链表 
+	{
+		i=Malloc(space); // 分配结点 
+		scanf("%c%*c",&space[i].data); // %*c吃掉回车符 
+		space[r].cur=i; // 插入到表尾 
+		r=i;
+	}
+	
+	space[r].cur=0; // 尾结点的指针为空 
+	printf("请输入集合B的元素（共%d个）:(空格隔开)\n",n);
+	for(j=1;j<=n;j++)
+	{ 	// 依次输入B的元素,若不在当前表中,则插入,否则删除 
+		scanf("%c%*c",&b);
+		p=*S;	//p指向头结点
+		k=space[*S].cur; // k指向集合A中的第一个结点 
+		while(k!=space[r].cur&&space[k].data!=b)
+		{ // 在当前表中查找，看B中是否有与A相同的元素 
+			p=k;
+			k=space[k].cur;
+		}
+		if(k==space[r].cur)
+		{ // 当前表中不存在该元素，插入在r所指结点之后，且r的位置不变 
+			i=Malloc(space);
+			space[i].data=b;
+			space[i].cur=space[r].cur;
+			space[r].cur=i;
+		}
+		else // 该元素已在表中，删除之 
+		{
+			space[p].cur=space[k].cur;
+			Free(space,k);
+			if(r==k)
+				r=p; // 若删除的是尾元素，则需修改尾指针 
+		}
+	}
+}
+
+// 改进算法2.17(尽量利用基本操作实现)
+// 依次输入集合A和B的元素，在一维数组space中建立表示集合(A-B)∪(B-A) 
+// 的静态链表，并返回其头指针。假设备用空间足够大，space[0].cur为备
+// 用空间的头指针 	
+int difference2(SLinkList space)  
+{	
+	int m,n,i,j,k,S,h;
+	ElemType b,c;
+	
+	InitSpace(space); // 初始化备用空间 
+	S=InitList(space); // 生成链表S的头结点 
+
+	printf("请输入集合A和B的元素个数m,n:(空格隔开)\n");
+	scanf("%d%d%*c",&m,&n); // %*c吃掉回车符 
+	printf("请输入集合A的元素（共%d个）:(空格隔开)\n",m);
+	for(j=1;j<=m;j++) // 建立集合A的链表 
+	{
+		scanf("%c%*c",&b); // 输入A的元素值 
+		ListInsert(space,S,j,b); // 插入到表尾 
+	}
+	 
+	printf("请输入集合B的元素（共%d个）:(空格隔开)\n",n);
+	for(j=1;j<=n;j++)
+	{ 
+		// 依次输入B的元素,若不在当前表中,则插入,否则删除 
+		scanf("%c%*c",&b);
+		k=LocateElem(space,S,b); // k为b的位序 
+		if(k) // b在当前表中 
+		{
+			PriorElem(space,S,b,&c);	// b的前驱为c 
+			i=LocateElem(space,S,c);	// i为c的位序 
+			space[i].cur=space[k].cur;	// 将k的指针赋给i的指针 
+			Free(space,k); // 将下标为k的空闲结点回收到备用链表 
+		}
+		else
+			ListInsert(space,S,ListLength(space,S)+1,b); // 在表尾插入b 
+	}
+	return S;
+}
+
+// 依次对L中表头位序为n的链表的每个数据元素,调用函数vi()
+int ListTraverse(SLinkList L,int n,void(*vi)(ElemType))
+{ 
+	int i=L[n].cur; // 指向第一个元素 
+	while(i) // 没到静态链表尾 
+	{
+		vi(L[i].data); // 调用vi() 
+		i=L[i].cur; // 指向下一个元素 
+	}
+	printf("\n");
+	return 1;
+}
+
+
+
+void visit(ElemType c)
+{
+	printf("%c ",c);
+}
+
+int main()
+{
+	int i, j, k, La, Lb;
+	ElemType e,e0;
+	SLinkList L, s;
+	
+	// 建立备用链表 
+	InitSpace(L); 
+	
+	// 初始化链表La 
+	La=InitList(L); 
+	// 初始化链表Lb 
+	Lb=InitList(L);
+	
+	//判断静态单链表是否为空，并求其链表的长度
+	printf("La表空否？%d(1:空 0:否) La的表长=%d\n",
+		ListEmpty(L,La),ListLength(L,La));
+	
+	//插入操作创建链表La
+	for(j=0;j < 5;j++)
+		ListInsert(L,La,1,j+'a');
+	
+	//对链表的所有元素调用函数visit
+	printf("在空表La的表头依次插入a～e后：La=");
+	ListTraverse(L,La,visit);
+
+	//插入操作创建链表Lb
+	for(j=1;j<=5;j++)
+		ListInsert(L,Lb,j,j+'a'-1);
+
+	//对链表的所有元素调用函数visit
+	printf("在空表Lb的表尾依次插入a～e后：Lb=");
+	ListTraverse(L,Lb,visit);
+	
+	//判断静态单链表是否为空，并求其链表的长度
+	printf("La表空否？%d(1:空 0:否) La的表长=%d\n",
+		ListEmpty(L,La),ListLength(L,La));
+	
+	//清空静态链表La
+	ClearList(L,La);
+	printf("清空La后：La=");
+	ListTraverse(L,La,visit);
+	printf("La表空否？%d(1:空 0:否) La的表长=%d\n",
+		ListEmpty(L,La),ListLength(L,La));
+	
+	//取元素
+	for(j=2;j<8;j+=5)
+	{
+		i=GetElem(L,Lb,j,&e);
+		if(i)
+			printf("Lb表的第%d个元素的值为：%c\n",j,e);
+		else
+			printf("Lb表不存在第%d个元素！\n", j);
+	}
+	
+	//求某个元素的位序
+	for(j=0+'a';j<=1;j++)
+	{
+		k=LocateElem(L,Lb,j);
+		if(k)
+			printf("Lb表中值为%c的元素在静态链表中的位序为%d\n",j,k);
+		else
+			printf("Lb表中没有值为%c的元素\n",j);
+	}
+
+	//求前驱
+	for(j=1;j<=2;j++) // 测试头两个数据 
+	{
+		GetElem(L,Lb,j,&e0);		// 把第j个数据赋给e0 
+		i=PriorElem(L,Lb,e0,&e);	// 求e0的前驱 
+		if(!i)
+			printf("Lb表中的元素%c无前驱\n",e0);
+		else
+			printf("Lb表中元素%c的前驱为：%c\n",e0,e);
+	}
+	
+	//求后继
+	for(j=ListLength(L,Lb)-1;j<=ListLength(L,Lb);j++) // 最后两个数据 
+	{
+		GetElem(L,Lb,j,&e0);	// 把第j个数据赋给e0 
+		i=NextElem(L,Lb,e0,&e);	// 求e0的后继 
+		if(!i)
+			printf("Lb表中元素%c无后继\n",e0);
+		else
+			printf("Lb表中元素%c的后继为：%c\n",e0,e);
+	}
+	
+	//删除操作
+	k=ListLength(L,Lb); // k为表长 
+	for(j=k;j>=k;j--)
+	{
+		i=ListDelete(L,Lb,j,&e); // 删除第j个数据 
+		if(i)
+			printf("Lb表中第%d个元素为%c,已删除。\n",j,e);
+		else
+			printf("删除Lb表中第%d个数据失败(不存在此元素)。\n",j);
+	}
+	printf("依次输出Lb的元素：");
+	ListTraverse(L,Lb,visit); // 依次对元素调用visit()，输出元素的值 
+	
+	difference1(s,&k);
+	ListTraverse(s,k,visit);
+	
+	k=difference2(s);
+	ListTraverse(s,k,visit);
+	
+	system("pause");
+	return 0;
+}
+
+/*
+输出效果：
+
+
+La表空否？1(1:空 0:否) La的表长=0
+在空表La的表头依次插入a～e后：La=e d c b a
+在空表Lb的表尾依次插入a～e后：Lb=a b c d e
+La表空否？0(1:空 0:否) La的表长=5
+清空La后：La=
+La表空否？1(1:空 0:否) La的表长=0
+Lb表的第2个元素的值为：b
+Lb表不存在第7个元素！
+Lb表中的元素a无前驱
+Lb表中元素b的前驱为：a
+Lb表中元素d的后继为：e
+Lb表中元素e无后继
+Lb表中第5个元素为e,已删除。
+依次输出Lb的元素：a b c d
+请输入集合A和B的元素个数m,n:(空格隔开)
+6 4
+请输入集合A的元素（共6个）:(空格隔开)
+c b e g f d
+请输入集合B的元素（共4个）:(空格隔开)
+a b n f
+c e g d n a
+请输入集合A和B的元素个数m,n:(空格隔开)
+2 3
+请输入集合A的元素（共2个）:(空格隔开)
+a b
+请输入集合B的元素（共3个）:(空格隔开)
+b c d
+a c d
+请按任意键继续. . . 
+
+*/

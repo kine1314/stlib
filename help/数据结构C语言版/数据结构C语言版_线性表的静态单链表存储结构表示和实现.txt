@@ -1,0 +1,303 @@
+/*
+	数据结构C语言版 线性表的静态单链表存储结构表示和实现
+	P31-34 
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月10日 
+*/
+
+#include <stdio.h> 
+
+typedef int ElemType;
+
+#define MAXSIZE 100 // 链表的最大长度 
+
+//  线性表的静态单链表存储结构 
+typedef struct
+{
+	ElemType data;	//存储数据，数据域
+	int cur;		//游标指示器cur，代替指针指示结点在数组中的位置
+}component,SLinkList[MAXSIZE];
+
+
+// 先将L的最后一个单元L[MAXSIZE-1]为表头，构造一个空的链表，然后将其
+// 余单元链成一个备用链表，这个备用链表的表头为L的第一个单元L[0]，无
+// 数据域。“0”表示空指针，初始化各元素的游标指示器cur 
+void InitList(SLinkList L)
+{
+	int i;
+	// L的最后一个单元为空链表的表头,无数据域
+	L[MAXSIZE-1].cur=0;	 
+	// 将其余单元链接成以L[0]为表头的备用链表 
+	for(i=0;i<MAXSIZE-2;i++)
+		L[i].cur=i+1;
+	//这个为什么也置为零呢？因为它是那个一L[0]为表头的备用链表的尾结点
+	L[MAXSIZE-2].cur=0;	
+}
+
+// 将L重置为空表
+int ClearList(SLinkList L)
+{
+	int i,j,k;
+	
+	i=L[MAXSIZE-1].cur;	// 链表第一个结点的位置 
+	L[MAXSIZE-1].cur=0; // 链表置空空 
+	k=L[0].cur;			// 备用链表第一个结点的位置 
+	L[0].cur=i;			// 把链表的结点连到备用链表的表头 
+	while(i)	// 没到链表尾，继续循环 
+	{
+		j=i;
+		i=L[i].cur; // 指向下一个元素 
+	}
+	L[j].cur=k; // 备用链表的第一个结点接到链表的尾部 
+	return 1;
+}
+
+// 若L是空表（第一个结点在数组的第0个位置，则是空表），返回1；
+// 否则返回0 
+int ListEmpty(SLinkList L)
+{
+	if(L[MAXSIZE-1].cur==0) // 空表 
+		return 1;
+	else
+		return 0;
+}
+
+// 返回L中数据元素个数
+int ListLength(SLinkList L)
+{
+	int j=0,	//用来统计结点的个数
+		i=L[MAXSIZE-1].cur; // i指向第一个元素 
+	while(i) // 没到静态链表尾，继续循环 
+	{
+		i=L[i].cur; // 指向下一个元素 
+		j++;
+	}
+	return j;
+}
+
+// 用e返回L中第i个元素的值
+int GetElem(SLinkList L,int i,ElemType *e)
+{
+	int l,
+		k=MAXSIZE-1; // k指向表头序号 
+	if(i<1||i>ListLength(L))
+		return 0;
+	for(l=1;l<=i;l++) // 移动到第i个元素处 
+		k=L[k].cur;
+	*e=L[k].data;
+	return 1;
+}
+
+// 算法2.13（有改动） P32
+// 在静态单链线性表L中查找第1个值为e的元素。若找到，则返回它在L中的 
+// 位序，否则返回0。（与其它LocateElem()的定义不同) 
+int LocateElem(SLinkList L,ElemType e) 
+{	
+	int i=L[MAXSIZE-1].cur; // i指示表中第一个结点 
+	while(i&&L[i].data!=e) // 在表中顺链查找(e不能是字符串) 
+		i=L[i].cur;
+	return i;
+}
+
+// 若cur_e是L的数据元素，且不是第一个，则用pre_e返回它的前驱， 
+int PriorElem(SLinkList L,ElemType cur_e,ElemType *pre_e)
+{	
+	int j,	//用来存储i所对应元素的前驱结点的位置
+		i=L[MAXSIZE-1].cur; // i指示链表第一个结点的位置 
+	do
+	{ // 向后移动结点 
+		j=i;
+		i=L[i].cur;
+	}while(i&&cur_e!=L[i].data);
+	if(i) // 找到该元素 
+	{
+		*pre_e=L[j].data;
+		return 1;
+	}
+	return 0;
+}
+
+// 若cur_e是L的数据元素，且不是最后一个，则用next_e返回它的后继
+int NextElem(SLinkList L,ElemType cur_e,ElemType *next_e)
+{	
+	int j,
+		i=LocateElem(L,cur_e); // 在L中查找第一个值为cur_e的元素的位置 
+	if(i) // L中存在元素cur_e 
+	{
+		j=L[i].cur; // cur_e的后继的位置 
+		if(j) // cur_e有后继 
+		{
+			*next_e=L[j].data;
+			return 1; // cur_e元素有后继 
+		}
+	}
+	return 0; // L不存在cur_e元素,cur_e元素无后继 
+}
+
+// 算法2.15
+// 若备用链表非空,则返回分配的结点下标(备用链表的第一个结点),否则返回0 
+int Malloc(SLinkList space) 
+{
+	int i=space[0].cur;
+	if(i) // 备用链表非空
+		// 备用链表的头结点指向原备用链表的第二个结点，因为第一个结点
+		// 已经被覆盖了 
+		space[0].cur=space[i].cur; 
+	return i; // 返回新开辟结点的坐标 
+}
+
+ // 算法2.16 
+// 将下标为k的空闲结点回收到备用链表(成为备用链表的第一个结点) 
+void Free(SLinkList space,int k)
+{
+	// 回收结点的＂游标＂指向备用链表的第一个结点
+	space[k].cur=space[0].cur;
+	space[0].cur=k; // 备用链表的头结点指向新回收的结点 
+}
+
+void DestroyList()
+{
+	// 静态数组不能被销毁 
+}
+
+// 在L中第i个元素之前插入新的数据元素e
+int ListInsert(SLinkList L,int i,ElemType e)
+{ 
+	int l,j,k=MAXSIZE-1; // k指向表头 
+	
+	if(i<1||i>ListLength(L)+1)
+		return 0;
+	j=Malloc(L); // 申请新单元 
+	if(j) // 申请成功 
+	{
+		L[j].data=e; // 赋值给新单元 
+		for(l=1;l<i;l++) // 移动i-1个元素 
+			k=L[k].cur;
+		L[j].cur=L[k].cur;
+		L[k].cur=j;
+		return 1;
+	}
+	return 0;
+}
+
+// 删除在L中第i个数据元素e，并返回其值
+int ListDelete(SLinkList L,int i,ElemType *e)
+{ 
+	int j,k=MAXSIZE-1; // k指向表头 
+	if(i<1||i>ListLength(L))
+		return 0;
+	for(j=1;j<i;j++) // 移动i-1个元素 
+		k=L[k].cur;
+	j=L[k].cur;
+	L[k].cur=L[j].cur;
+	*e=L[j].data;
+	Free(L,j);
+	return 1;
+}
+
+// 依次对L的每个数据元素调用函数vi()
+int ListTraverse(SLinkList L,void(*vi)(ElemType))
+{   
+	int i=L[MAXSIZE-1].cur; // 指向第一个元素 
+	
+	while(i) // 没到静态链表尾 
+	{
+		vi(L[i].data); // 调用vi() 
+		i=L[i].cur; // 指向下一个元素 
+	}
+	printf("\n");
+	return 1;
+}
+
+void visit(ElemType c)
+{
+	printf("%d ",c);
+}
+
+int main()
+{
+	int j,k;
+	int i;
+	ElemType e,e0;
+	SLinkList L;
+	InitList(L);
+	for(j=1;j<=5;j++)
+		i=ListInsert(L,1,j);
+	printf("在L的表头依次插入1～5后：L=");
+	ListTraverse(L,visit);
+	i=ListEmpty(L);
+	printf("L是否空:i=%d(1:是 0:否)表L的长度=%d\n",i,ListLength(L));
+	i=ClearList(L);
+	printf("清空L后：L=");
+	ListTraverse(L,visit);
+	i=ListEmpty(L);
+	printf("L是否空:i=%d(1:是 0:否)表L的长度=%d\n",i,ListLength(L));
+	for(j=1;j<=10;j++)
+		ListInsert(L,j,j);
+	printf("在L的表尾依次插入1～10后：L=");
+	ListTraverse(L,visit);
+	GetElem(L,5,&e);
+	printf("第5个元素的值为：%d\n",e);
+	for(j=0;j<=1;j++)
+	{
+		k=LocateElem(L,j);
+		if(k)
+			printf("值为%d的元素在静态链表中的位序为%d\n",j,k);
+		else
+			printf("没有值为%d的元素\n",j);
+	}
+	for(j=1;j<=2;j++) // 测试头两个数据 
+	{
+		GetElem(L,j,&e0); // 把第j个数据赋给e0 
+		i=PriorElem(L,e0,&e); // 求e0的前驱 
+		if(!i)
+			printf("元素%d无前驱\n",e0);
+		else
+			printf("元素%d的前驱为：%d\n",e0,e);
+	}
+	for(j=ListLength(L)-1;j<=ListLength(L);j++) // 最后两个数据 
+	{
+		GetElem(L,j,&e0); // 把第j个数据赋给e0 
+		i=NextElem(L,e0,&e); // 求e0的后继 
+		if(!i)
+			printf("元素%d无后继\n",e0);
+		else
+			printf("元素%d的后继为：%d\n",e0,e);
+	}
+	k=ListLength(L); // k为表长 
+	for(j=k+1;j>=k;j--)
+	{
+		i=ListDelete(L,j,&e); // 删除第j个数据 
+		if(i)
+			printf("删除的元素为：%d\n",e);
+		else
+			printf("删除第%d个数据失败\n",j);
+	}
+	printf("依次输出L的元素：");
+	ListTraverse(L,visit); // 依次对元素调用visit()，输出元素的值 
+	
+	system("pause");
+	return 0;
+}
+
+/*
+输出效果：
+
+在L的表头依次插入1～5后：L=5 4 3 2 1
+L是否空:i=0(1:是 0:否)表L的长度=5
+清空L后：L=
+L是否空:i=1(1:是 0:否)表L的长度=0
+在L的表尾依次插入1～10后：L=1 2 3 4 5 6 7 8 9 10
+第5个元素的值为：5
+没有值为0的元素
+值为1的元素在静态链表中的位序为5
+元素1无前驱
+元素2的前驱为：1
+元素9的后继为：10
+元素10无后继
+删除第11个数据失败
+删除的元素为：10
+依次输出L的元素：1 2 3 4 5 6 7 8 9
+请按任意键继续. . . 
+
+*/ 

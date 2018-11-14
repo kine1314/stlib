@@ -1,0 +1,198 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: stlib - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP15B9.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"Debug/stlib.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"F:\stlib\trunk\test\stlibtest.c"
+"F:\stlib\trunk\src\st_b_tree.c"
+"F:\stlib\trunk\src\st_pthread_pool.c"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP15B9.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP15BA.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/stlib.pdb" /debug /machine:I386 /out:"Debug/stlib.exe" /pdbtype:sept 
+.\Debug\st_arry.obj
+.\Debug\st_asyncqueue.obj
+.\Debug\st_avltree.obj
+.\Debug\st_btree.obj
+.\Debug\st_dlist.obj
+.\Debug\st_ghash.obj
+.\Debug\st_gtree.obj
+.\Debug\st_hash.obj
+.\Debug\st_huffmantree.obj
+.\Debug\st_log.obj
+.\Debug\st_qsort.obj
+.\Debug\st_quene.obj
+.\Debug\st_rbtree.obj
+.\Debug\st_rbtree_lk.obj
+.\Debug\st_slist.obj
+.\Debug\st_splaytree.obj
+.\Debug\st_stack.obj
+.\Debug\st_treaptree.obj
+.\Debug\stlibtest.obj
+.\Debug\st_b_tree.obj
+".\Debug\st_b+_tree.obj"
+.\Debug\st_extendible_hashing.obj
+.\Debug\st_hash_common.obj
+.\Debug\st_mempool.obj
+.\Debug\st_open_addressing_double_hash.obj
+.\Debug\st_open_addressing_hash.obj
+.\Debug\st_open_addressing_hash_2.obj
+.\Debug\st_open_addressing_hash_with_hashing_again.obj
+.\Debug\st_pthread_pool.obj
+.\Debug\st_separate_chaining_hash.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP15BA.tmp"
+<h3>Output Window</h3>
+Compiling...
+stlibtest.c
+f:\stlib\trunk\test\stlibtest.c(130) : warning C4013: 'st_dump_array' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(163) : warning C4013: 'st_arry_iteration_merge_sort' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(181) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(182) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(183) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(184) : warning C4018: '<' : signed/unsigned mismatch
+f:\stlib\trunk\test\stlibtest.c(186) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(188) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(193) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(201) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(205) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(209) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(222) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(225) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(227) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(236) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(237) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(238) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(239) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(241) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(242) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(243) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(266) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(288) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(290) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(306) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(307) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(308) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(309) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(310) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(311) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(327) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(330) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(335) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(351) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(474) : warning C4013: 'time' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(637) : warning C4018: '==' : signed/unsigned mismatch
+f:\stlib\trunk\test\stlibtest.c(654) : warning C4018: '==' : signed/unsigned mismatch
+f:\stlib\trunk\test\stlibtest.c(749) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(755) : warning C4002: too many actual parameters for macro '__msg'
+f:\stlib\trunk\test\stlibtest.c(793) : warning C4101: 'key' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1039) : warning C4101: 'index' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1082) : warning C4101: 'index' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1105) : warning C4101: 'index' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1126) : warning C4101: 'index' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1148) : warning C4101: 'index' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1176) : warning C4101: 'index' : unreferenced local variable
+f:\stlib\trunk\test\stlibtest.c(1206) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\test\stlibtest.c(1210) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\test\stlibtest.c(1216) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\test\stlibtest.c(1405) : warning C4098: 'st_mempool_test' : 'void' function returning a value
+f:\stlib\trunk\test\stlibtest.c(1424) : warning C4098: 'st_mempool_test' : 'void' function returning a value
+f:\stlib\trunk\test\stlibtest.c(1447) : warning C4013: 'pthread_self' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(1448) : warning C4013: 'sleep' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(1454) : warning C4013: 'pool_init' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(1457) : error C2143: syntax error : missing ';' before 'type'
+f:\stlib\trunk\test\stlibtest.c(1458) : error C2143: syntax error : missing ';' before 'type'
+f:\stlib\trunk\test\stlibtest.c(1459) : error C2065: 'i' : undeclared identifier
+f:\stlib\trunk\test\stlibtest.c(1461) : error C2065: 'workingnum' : undeclared identifier
+f:\stlib\trunk\test\stlibtest.c(1461) : error C2109: subscript requires array or pointer type
+f:\stlib\trunk\test\stlibtest.c(1461) : error C2106: '=' : left operand must be l-value
+f:\stlib\trunk\test\stlibtest.c(1462) : warning C4013: 'pool_add_worker' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(1462) : error C2109: subscript requires array or pointer type
+f:\stlib\trunk\test\stlibtest.c(1462) : error C2102: '&' requires l-value
+f:\stlib\trunk\test\stlibtest.c(1467) : warning C4013: 'pool_destroy' undefined; assuming extern returning int
+f:\stlib\trunk\test\stlibtest.c(1469) : warning C4022: 'free' : pointer mismatch for actual parameter 1
+f:\stlib\trunk\test\stlibtest.c(1470) : warning C4098: 'st_pthread_test' : 'void' function returning a value
+st_b_tree.c
+f:\stlib\trunk\src\st_b_tree.c(27) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\src\st_b_tree.c(40) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\src\st_b_tree.c(52) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\src\st_b_tree.c(57) : warning C4002: too many actual parameters for macro '__inf'
+f:\stlib\trunk\src\st_b_tree.c(107) : error C2059: syntax error : 'if'
+f:\stlib\trunk\src\st_b_tree.c(108) : error C2143: syntax error : missing ';' before 'type'
+f:\stlib\trunk\src\st_b_tree.c(111) : error C2275: 'BTNode' : illegal use of this type as an expression
+        f:\stlib\trunk\include\st_b_tree.h(60) : see declaration of 'BTNode'
+f:\stlib\trunk\src\st_b_tree.c(111) : error C2065: 'newNode' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(117) : error C2223: left of '->isLeaf' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(118) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(121) : error C2065: 'i' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(121) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(122) : error C2223: left of '->key' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(129) : error C2223: left of '->child' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(142) : warning C4047: '=' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(155) : warning C4047: 'function' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(155) : warning C4024: 'disk_write' : different types for formal and actual parameter 1
+f:\stlib\trunk\src\st_b_tree.c(161) : error C2059: syntax error : 'if'
+f:\stlib\trunk\src\st_b_tree.c(163) : error C2143: syntax error : missing ';' before 'type'
+f:\stlib\trunk\src\st_b_tree.c(210) : error C2275: 'BTNode' : illegal use of this type as an expression
+        f:\stlib\trunk\include\st_b_tree.h(60) : see declaration of 'BTNode'
+f:\stlib\trunk\src\st_b_tree.c(210) : error C2065: 'node' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(211) : error C2275: 'BTNode' : illegal use of this type as an expression
+        f:\stlib\trunk\include\st_b_tree.h(60) : see declaration of 'BTNode'
+f:\stlib\trunk\src\st_b_tree.c(211) : error C2065: 'root' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(214) : warning C4047: '==' : 'void *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(215) : warning C4047: '=' : 'int ' differs in levels of indirection from 'struct BTNode *'
+f:\stlib\trunk\src\st_b_tree.c(220) : error C2223: left of '->isLeaf' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(221) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(222) : error C2223: left of '->key' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(224) : warning C4047: '=' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(227) : warning C4047: 'function' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(227) : warning C4024: 'disk_write' : different types for formal and actual parameter 1
+f:\stlib\trunk\src\st_b_tree.c(233) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(235) : warning C4047: '=' : 'int ' differs in levels of indirection from 'struct BTNode *'
+f:\stlib\trunk\src\st_b_tree.c(241) : warning C4047: '=' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(242) : error C2223: left of '->isLeaf' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(243) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(244) : error C2223: left of '->child' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(246) : warning C4047: 'function' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(246) : warning C4024: 'BTree_split_child' : different types for formal and actual parameter 1
+f:\stlib\trunk\src\st_b_tree.c(246) : warning C4047: 'function' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(246) : warning C4024: 'BTree_split_child' : different types for formal and actual parameter 3
+f:\stlib\trunk\src\st_b_tree.c(248) : warning C4047: 'function' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(248) : warning C4024: 'BTree_insert_nonfull' : different types for formal and actual parameter 1
+f:\stlib\trunk\src\st_b_tree.c(253) : warning C4047: 'function' : 'struct BTNode *' differs in levels of indirection from 'int '
+f:\stlib\trunk\src\st_b_tree.c(253) : warning C4024: 'BTree_insert_nonfull' : different types for formal and actual parameter 1
+f:\stlib\trunk\src\st_b_tree.c(267) : error C2059: syntax error : 'if'
+f:\stlib\trunk\src\st_b_tree.c(269) : error C2143: syntax error : missing ';' before 'type'
+f:\stlib\trunk\src\st_b_tree.c(271) : error C2275: 'KeyType' : illegal use of this type as an expression
+        f:\stlib\trunk\include\st_b_tree.h(54) : see declaration of 'KeyType'
+f:\stlib\trunk\src\st_b_tree.c(271) : error C2146: syntax error : missing ';' before identifier 'key'
+f:\stlib\trunk\src\st_b_tree.c(271) : error C2065: 'key' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(272) : error C2275: 'BTNode' : illegal use of this type as an expression
+        f:\stlib\trunk\include\st_b_tree.h(60) : see declaration of 'BTNode'
+f:\stlib\trunk\src\st_b_tree.c(272) : error C2065: 'leftChild' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(273) : error C2275: 'BTNode' : illegal use of this type as an expression
+        f:\stlib\trunk\include\st_b_tree.h(60) : see declaration of 'BTNode'
+f:\stlib\trunk\src\st_b_tree.c(273) : error C2065: 'rightChild' : undeclared identifier
+f:\stlib\trunk\src\st_b_tree.c(276) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(276) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(279) : error C2223: left of '->key' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(279) : error C2223: left of '->keynum' must point to struct/union
+f:\stlib\trunk\src\st_b_tree.c(279) : fatal error C1903: unable to recover from previous error(s); stopping compilation
+st_pthread_pool.c
+f:\stlib\trunk\src\st_pthread_pool.c(10) : fatal error C1083: Cannot open include file: 'pthread.h': No such file or directory
+Error executing cl.exe.
+
+
+
+<h3>Results</h3>
+stlib.exe - 46 error(s), 81 warning(s)
+</pre>
+</body>
+</html>

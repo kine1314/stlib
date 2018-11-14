@@ -1,0 +1,265 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+/*
+	数据结构C语言版 顺序文件处理 
+	P310 根据事务文件成批地更改主文件并得到一个新的主文件
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月9日 
+*/
+
+// 主文件记录类型。
+typedef struct RedType
+{
+	int accounts;	// 帐号
+	int amount;		// 余额
+}RedType;
+
+// 事务文件记录类型(比主文件记录类型多了成员code) 。
+typedef struct RcdType 
+{
+	int accounts;	// 帐号
+	int amount;		// 存取的数量(存为+,取为-)
+	char code;		// 修改要求(I:插入 U:修改 D:删除)
+}RcdType;
+
+#define key accounts
+
+// 把事务文件记录g加工为主文件记录q的结构返回。 
+RedType P(RcdType g)
+{
+	RedType q;
+	
+	q.accounts = g.accounts;
+	q.amount = g.amount;
+	
+	return q;
+}
+
+// 将主文件记录f和事务文件记录g归并成一个新主文件记录。
+// 通过指针来实现值的改变。
+void Q(RedType *f, RcdType g)
+{
+	(*f).amount += g.amount;
+}
+
+// 算法12.1
+// 由按关键字递增有序的非空顺序文件f和事务文件g归并得到新文件h，
+// 三个文件均已打开，其中，f和g为只读文件，文件中各附加一个最大
+// 关键字记录，且g文件中对该记录的操作为插入。h为只写文件。
+void MergeFile(FILE *f, FILE *g, FILE *h)
+{
+	RedType fr,fn;
+	RcdType gr;
+	int i;
+	
+	// 从旧主文件和事务文件分别读取一条记录。
+	fread(&fr, sizeof(RedType), 1, f);
+	fread(&gr, sizeof(RcdType), 1, g);
+	
+	while( !feof(f) || !feof(g) )
+	{
+		if(fr.key < gr.key)
+			i = 1;
+		else if('D' == gr.code && fr.key == gr.key)
+			i = 2;
+		else if('I' == gr.code && fr.key > gr.key)
+			i = 3;
+		else if('U' == gr.code && fr.key == gr.key)
+			i = 4;
+		else
+			i = 0;
+		switch( i )
+		{
+		case 1:		 
+			// 直接复制“旧”主文件中记录到新主文件中。
+			fwrite(&fr, sizeof(RedType), 1, h);
+			if( !feof(f) )
+				fread(&fr, sizeof(RedType), 1, f);
+			break;
+		case 2: 
+			// 删除“旧”主文件中记录。 
+			if( !feof(f) )
+				fread(&fr,sizeof(RedType),1,f);
+			if( !feof(g) )
+				fread(&gr,sizeof(RcdType),1,g);
+			break;
+		case 3: 
+			// 插入新文件中。函数P把事务文件记录gr加工为新文件h
+			// 的记录的结构。 
+			fn = P(gr);
+			fwrite(&fn, sizeof(RedType), 1, h);
+			if( !feof(g) )
+				fread(&gr, sizeof(RcdType), 1, g);
+			break;
+		case 4: 
+			/* 
+				更改“旧”主文件中记录,然后写入新文件中。函数Q将旧
+				文件记录fr和事务文件记录gr归并成一个新文件h结构的记录。
+			*/
+			Q(&fr, gr); 
+			fwrite(&fr, sizeof(RedType), 1, h);
+			if( !feof(f) )
+				fread(&fr, sizeof(RedType), 1, f);
+			if( !feof(g) )
+				fread(&gr, sizeof(RcdType), 1, g);
+			break;
+		default:
+			// 其它均为出错情况
+			exit(0);
+		}
+	}
+}
+
+// 打印主文件记录。
+void print(RedType t)
+{
+	printf("%6d%6d\n", t.accounts, t.amount);
+}
+
+// 打印事务文件记录。
+void printc(RcdType t)
+{
+	printf("%6d%10d%8c\n", t.accounts, t.amount, t.code);
+}
+
+int main()
+{
+	// 旧主文件数据
+	RedType c, a[8] = {
+		{ 1, 50},
+		{ 5, 78},
+		{12, 100},
+		{14, 95},
+		{15, 360},
+		{18, 200},
+		{20, 510},
+		{INT_MAX, 0}
+	};
+	// 已排序的事务文件数据
+	RcdType d,b[6] = {
+		{ 8, 100, 'I'},
+		{12, -25, 'U'},
+		{14, 38, 'U'},
+		{18, -200, 'D'},
+		{21, 60, 'I'},
+		{INT_MAX, 0, 'U'}
+	};
+	FILE *f, *g, *h;
+	int j;
+	
+	/* 
+		以写的方式打开主文件old.txt，然后将将数组a中的数据写入
+		文件old.txt，最后关闭文件old.txt，这样就形成主文件。
+	*/
+	f = fopen("old.txt", "w"); 
+	fwrite(a, sizeof(RedType), 8, f);
+	fclose(f);
+
+	/* 
+		以写的方式打开事务文件change.txt，然后将数组b中的数据写
+		入文件change.txt，最后关闭文件change.txt，形成已排序的事
+		务文件。
+	*/
+	f = fopen("change.txt", "w"); 
+	fwrite(b, sizeof(RcdType), 6, f);
+	fclose(f);
+
+	/* 
+		以读的方式打开主文件old.txt,然后打印文件中的记录。
+	*/
+	f = fopen("old.txt","r"); 
+	printf("主文件内容:\n");
+	printf("%6s%6s\n", "账号", "余额");
+	do
+	{
+		j = fread(&c, sizeof(RedType), 1, f);
+		if(1 == j)
+			print(c);	// 输出r的内容
+	}while(1 == j);
+	printf("\n");
+	// 使f的指针重新返回文件的起始位置，以便重新读入内存。
+	rewind(f);
+	
+	/* 
+		以读的方式打开已排序的事务文件change.txt,然后打印事务文件中的
+		事务记录。
+	*/
+	g = fopen("change.txt", "r"); 
+	printf("已排序的事务文件内容:\n");
+	printf("%6s%10s%8s\n", "账号", "存取数量", "修改要求");
+	do
+	{
+		j = fread(&d, sizeof(RcdType), 1, g);
+		if(1 == j)
+			printc(d);	/* 输出r的内容 */
+	}while(1 == j);
+	printf("\n");
+	// 使g的指针重新返回文件的起始位置，以便重新读入内存.
+	rewind(g); 
+	
+	// 以写的方式打开新主文件new 
+	h = fopen("new.txt","w"); 
+	
+	// 将旧主文件与事务文件归并生成新主文件。 
+	MergeFile(f, g, h); 
+	
+	/* 关闭所有打开的文件 */
+	fclose(f); 
+	fclose(g);
+	fclose(h);
+	
+	// 以读的方式打开新主文件new.txt，然后打印其中的内容。
+	f = fopen("new.txt", "r"); 
+	printf("新主文件内容:\n");
+	printf("%6s%6s\n", "账号", "余额");
+	do
+	{
+		j = fread(&c, sizeof(RedType), 1, f);
+		if(1 == j)
+			print(c);	/* 输出r的内容 */
+	}while(1 == j);
+	printf("\n");
+	fclose(f);
+
+	system("pause"); 
+	return 0;
+}
+/*
+输出效果：
+
+主文件内容:
+  账号  余额
+     1    50
+     5    78
+    12   100
+    14    95
+    15   360
+    18   200
+    20   510
+2147483647     0
+
+已排序的事务文件内容:
+  账号  存取数量修改要求
+     8       100       I
+    12       -25       U
+    14        38       U
+    18      -200       D
+    21        60       I
+2147483647         0       U
+
+新主文件内容:
+  账号  余额
+     1    50
+     5    78
+     8   100
+    12    75
+    14   133
+    15   360
+    20   510
+    21    60
+2147483647     0
+
+请按任意键继续. . .
+
+*/

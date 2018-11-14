@@ -1,0 +1,139 @@
+/*
+	数据结构C语言版 栈实现括号匹配的检验 
+	P49 
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月12日 
+*/
+
+#include <stdio.h>
+#include <malloc.h>
+
+typedef char SElemType;	// 栈的元素类型
+
+#define STACK_INIT_SIZE 10	// 存储空间初始分配量 
+#define STACKINCREMENT 2	// 存储空间分配增量 
+// 栈的顺序存储表示 P46 
+typedef struct SqStack
+{
+	SElemType *base;	// 在栈构造之前和销毁之后，base的值为NULL 
+	SElemType *top;		// 栈顶指针 
+	int stacksize;		// 当前已分配的存储空间，以元素为单位 
+}SqStack;	// 顺序栈
+
+
+
+//	构造一个空栈S。
+int InitStack(SqStack *S)
+{
+	// 为栈底分配一个指定大小的存储空间
+	(*S).base = (SElemType *)malloc(STACK_INIT_SIZE*sizeof(SElemType));
+	if( !(*S).base )
+		exit(0);		// 存储分配失败 
+	(*S).top = (*S).base;	// 栈底与栈顶相同表示一个空栈
+	(*S).stacksize = STACK_INIT_SIZE;
+	return 1;
+}
+
+
+// 若栈S为空栈（栈顶与栈底相同的），则返回1，否则返回0。
+int StackEmpty(SqStack S)
+{
+	if(S.top == S.base)
+		return 1;
+	else
+		return 0;
+}
+
+//	插入元素e为新的栈顶元素。
+int Push(SqStack *S, SElemType e)
+{
+	if((*S).top - (*S).base >= (*S).stacksize)	// 栈满，追加存储空间 
+	{
+		(*S).base = (SElemType *)realloc((*S).base, 
+			((*S).stacksize + STACKINCREMENT) * sizeof(SElemType));
+		if( !(*S).base )
+			exit(0); // 存储分配失败 
+		(*S).top = (*S).base+(*S).stacksize;
+		(*S).stacksize += STACKINCREMENT;
+	}
+	*((*S).top)++=e;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	return 1;
+}
+
+//	若栈不空，则删除S的栈顶元素，用e返回其值，并返回1；否则返回0。
+int Pop(SqStack *S,SElemType *e)
+{
+	if((*S).top == (*S).base)
+		return 0;
+	*e = *--(*S).top;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	return 1;
+}
+
+//	对于输入的任意一个字符串，检验括号是否配对.
+void check()
+{
+	SqStack s;
+	SElemType ch[80], *p, e;
+   
+	if(InitStack( &s ))	// 初始化栈成功 
+	{
+		printf("请输入表达式\n");
+		gets(ch);
+		p = ch;
+		while(*p)	// 没到串尾 
+			switch(*p)
+			{
+			case '(':
+			case '[':
+				Push(&s,*p++);
+                break;	// 左括号入栈，且p++ 
+			case ')':
+			case ']':
+				if(!StackEmpty(s))	// 栈不空 
+                {
+					Pop(&s, &e);	// 弹出栈顶元素 
+					// 弹出的栈顶元素与*p不配对 
+                    if(*p == ')' && e != '(' || *p == ']' && e != '[' )
+                    {
+                      printf("左右括号不配对\n");
+					  return;
+                    }
+                    else
+                    {
+						p++;
+						break; // 跳出switch语句 
+                    }
+				}
+				else // 栈空 
+				{
+					printf("缺乏左括号\n");              
+					return;
+				}
+			default: p++; // 其它字符不处理，指针向后移 
+		}
+		if(StackEmpty(s)) // 字符串结束时栈空 
+			printf("括号匹配\n");
+		else
+			printf("缺乏右括号\n");
+	}
+}
+
+int main()
+{
+	check();
+	
+	system("pause");
+	return 0; 
+}
+
+/*
+输出效果： 
+
+请输入表达式
+(1+3
+缺乏右括号
+请按任意键继续. . .
+
+*/

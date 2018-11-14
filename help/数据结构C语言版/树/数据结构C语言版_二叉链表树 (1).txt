@@ -1,0 +1,658 @@
+/*
+	数据结构C语言版 二叉链表树
+	P127 
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月13日 
+*/
+#include <stdio.h>
+#include <malloc.h>
+
+//	用链表存储结构表示二叉树。
+typedef char TElemType;
+	
+typedef struct BiTNode
+{
+	TElemType data;
+	struct BiTNode *lchild, *rchild;	// 左右孩子指针
+}BiTNode, *BiTree;
+
+typedef BiTree QElemType; // 设队列元素类型为二叉树的指针类型
+typedef BiTree SElemType; // 设栈元素类型为二叉树的指针类型
+
+// 单链队列－－队列的链式存储结构
+typedef struct QNode
+{
+	QElemType data;		//数据域
+	struct QNode *next;	//指针域
+}QNode, *QueuePtr;
+
+typedef struct
+{
+	QueuePtr front,	//队头指针，指针域指向队头元素
+		rear;		//队尾指针，指向队尾元素
+}LinkQueue;
+
+#define STACK_INIT_SIZE 10	// 存储空间初始分配量 
+#define STACKINCREMENT 2	// 存储空间分配增量 
+// 栈的顺序存储表示 P46 
+typedef struct SqStack
+{
+	SElemType *base;	// 在栈构造之前和销毁之后，base的值为NULL 
+	SElemType *top;		// 栈顶指针 
+	int stacksize;		// 当前已分配的存储空间，以元素为单位 
+}SqStack;	// 顺序栈
+
+
+TElemType Nil=' ';	// 字符型以空格符为空 
+
+// 构造空二叉树T 
+int InitBiTree(BiTree *T)
+{
+	*T=NULL;
+	return 1;
+}
+
+// 销毁二叉树T 
+void DestroyBiTree(BiTree *T)
+{
+	if(*T) // 非空树 
+	{
+		if((*T)->lchild) // 有左孩子 
+			DestroyBiTree(&(*T)->lchild); // 销毁左孩子子树 
+		if((*T)->rchild) // 有右孩子 
+			DestroyBiTree(&(*T)->rchild); // 销毁右孩子子树 
+		free(*T); // 释放根结点 
+		*T=NULL; // 空指针赋0 
+	}
+}
+
+#define ClearBiTree DestroyBiTree
+
+// 算法6.4 P131 有改动
+// 按先序次序输入二叉树中结点的值，构造二叉链表表示的二叉树T
+// 变量Nil表示空（子）树。 
+void CreateBiTree(BiTree *T)
+{ 
+	TElemType ch;
+	scanf("%c",&ch);
+
+	if(ch==Nil) // 空 
+		*T=NULL;
+	else
+	{
+		*T=(BiTree)malloc(sizeof(BiTNode));
+		if(!*T)
+			exit(0);
+		(*T)->data=ch; // 生成根结点 
+		CreateBiTree(&(*T)->lchild); // 构造左子树 
+		CreateBiTree(&(*T)->rchild); // 构造右子树 
+	}
+}
+
+// 若T为空二叉树,则返回1,否则0 
+int BiTreeEmpty(BiTree T)
+{
+	if(T)
+		return 0;
+	else
+		return 1;
+}
+
+// 返回T的深度 
+int BiTreeDepth(BiTree T)
+{
+	int i,j;
+	if(!T)
+		return 0;
+	if(T->lchild)
+		i=BiTreeDepth(T->lchild);	//递归求深度
+	else
+		i=0;
+	if(T->rchild)
+		j=BiTreeDepth(T->rchild);
+	else
+		j=0;
+	return i>j ? i+1 : j+1;
+}
+
+// 返回T的根 
+TElemType Root(BiTree T)
+{
+	if(BiTreeEmpty(T))
+		return Nil;
+	else
+		return T->data;
+}
+
+// 返回p所指结点的值
+TElemType Value(BiTree p)
+{ 
+	return p->data;
+}
+
+// 给p所指结点赋值为value
+void Assign(BiTree p,TElemType value)
+{ 
+	p->data=value;
+}
+
+// 构造一个空队列Q 
+int InitQueue(LinkQueue *Q)
+{
+	//动态分配一个空间
+	(*Q).front=(*Q).rear=(QueuePtr)malloc(sizeof(QNode));
+	if(!(*Q).front)
+		exit(0);
+	//队头指针指向空，无数据域，这样构成了一个空队列
+	(*Q).front->next=NULL;
+	return 1;
+}
+
+// 插入元素e为Q的新的队尾元素
+int EnQueue(LinkQueue *Q,QElemType e)
+{
+	QueuePtr p=(QueuePtr)malloc(sizeof(QNode));
+	if(!p) // 存储分配失败 
+		exit(0);
+	//生成一个以为e为数据域的队列元素
+	p->data=e;
+	p->next=NULL;
+	//将该新队列元素接在队尾的后面
+	(*Q).rear->next=p;
+	(*Q).rear=p;
+	return 1;
+}
+
+// 若队列不空,删除Q的队头元素,用e返回其值,并返回1,否则返回0
+int DeQueue(LinkQueue *Q,QElemType *e)
+{ 
+	QueuePtr p;
+	if((*Q).front==(*Q).rear)
+		return 0;
+	p=(*Q).front->next;	//队头元素
+	*e=p->data;
+	(*Q).front->next=p->next;
+	if((*Q).rear==p)
+		(*Q).rear=(*Q).front;
+	free(p);
+	return 1;
+}
+
+// 若Q为空队列,则返回1,否则返回0
+int QueueEmpty(LinkQueue Q)
+{ 
+	if(Q.front==Q.rear)
+		return 1;
+	else
+		return 0;
+}
+
+// 若e是T的非根结点,则返回它的双亲,否则返回＂空＂
+TElemType Parent(BiTree T,TElemType e)
+{ 
+	LinkQueue q;
+	QElemType a;
+	
+	if(T) // 非空树 
+	{
+		InitQueue(&q); // 初始化队列 
+		EnQueue(&q,T); // 树根入队 
+		while(!QueueEmpty(q)) // 队不空 
+		{
+			DeQueue(&q,&a); // 出队,队列元素赋给a 
+			if(a->lchild&&a->lchild->data==e||a->rchild
+				&&a->rchild->data==e)
+				// 找到e(是其左或右孩子) 
+				return a->data; // 返回e的双亲的值 
+			else // 没找到e,则入队其左右孩子指针(如果非空) 
+			{
+				if(a->lchild)
+					EnQueue(&q,a->lchild);
+				if(a->rchild)
+					EnQueue(&q,a->rchild);
+			}
+		}
+	}
+	return Nil; // 树空或没找到e 
+}
+
+// 返回二叉树T中指向元素值为s的结点的指针。
+BiTree Point(BiTree T,TElemType s)
+{ 
+	LinkQueue q;
+	QElemType a;
+	if(T) // 非空树 
+	{
+		InitQueue(&q); // 初始化队列 
+		EnQueue(&q,T); // 根结点入队 
+		while(!QueueEmpty(q)) // 队不空 
+		{
+			DeQueue(&q,&a); // 出队,队列元素赋给a 
+			if(a->data==s)
+				return a;
+			if(a->lchild) // 有左孩子 
+				EnQueue(&q,a->lchild); // 入队左孩子 
+			if(a->rchild) // 有右孩子 
+				EnQueue(&q,a->rchild); // 入队右孩子 
+		}
+	}
+	return NULL;
+ }
+
+// 返回e的左孩子。若e无左孩子,则返回＂空＂
+TElemType LeftChild(BiTree T,TElemType e)
+{ 
+	BiTree a;
+	if(T) // 非空树 
+	{
+		a=Point(T,e); // a是结点e的指针 
+		if(a&&a->lchild) // T中存在结点e且e存在左孩子 
+			return a->lchild->data; // 返回e的左孩子的值 
+	}
+	return Nil; // 其余情况返回空 
+}
+
+// 返回e的右孩子。若e无右孩子,则返回＂空＂
+TElemType RightChild(BiTree T,TElemType e)
+{    
+	BiTree a;
+	if(T) // 非空树 
+	{
+		a=Point(T,e); // a是结点e的指针 
+		if(a && a->rchild) // T中存在结点e且e存在右孩子 
+			return a->rchild->data; // 返回e的右孩子的值 
+	}
+	return Nil; // 其余情况返回空 
+}
+
+// 返回e的左兄弟。若e是T的左孩子或无左兄弟,则返回＂空＂
+TElemType LeftSibling(BiTree T,TElemType e)
+{  
+	TElemType a;
+	BiTree p;
+	
+	if(T) // 非空树 
+	{
+		a=Parent(T,e); // a为e的双亲 
+		p=Point(T,a); // p为指向结点a的指针 
+		// p存在左右孩子且右孩子是e
+		if( p->lchild && p->rchild && p->rchild->data == e) 
+			return p->lchild->data; // 返回p的左孩子(e的左兄弟) 
+	}
+	return Nil; // 树空或没找到e的左兄弟 
+}
+
+// 返回e的右兄弟。若e是T的右孩子或无右兄弟,则返回＂空＂
+TElemType RightSibling(BiTree T,TElemType e)
+{    
+	TElemType a;
+	BiTree p;
+	if(T) // 非空树 
+	{
+		a=Parent(T,e); // a为e的双亲 
+		p=Point(T,a); // p为指向结点a的指针
+		// p存在左右孩子且左孩子是e
+		if(p->lchild&&p->rchild&&p->lchild->data==e) 
+			return p->rchild->data; // 返回p的右孩子(e的右兄弟) 
+	}
+	return Nil; // 树空或没找到e的右兄弟 
+}
+
+//　根据LR为0或1,插入c为T中p所指结点的左或右子树。p所指结点的 
+//　原有左或右子树则成为c的右子树 
+int InsertChild(BiTree p,int LR,BiTree c) // 形参T无用 
+{   
+	if(p) // p不空 
+	{
+		if(LR==0)
+		{
+			c->rchild=p->lchild;
+			p->lchild=c;
+		}
+		else // LR==1 
+		{
+			c->rchild=p->rchild;
+			p->rchild=c;
+		}
+		return 1;
+	}
+	return 0; // p空 
+}
+
+// 根据LR为0或1,删除T中p所指结点的左或右子树 
+int DeleteChild(BiTree p,int LR) 
+{
+	if(p) // p不空 
+	{
+		if(LR==0) // 删除左子树 
+			ClearBiTree(&p->lchild);
+		else // 删除右子树 
+			ClearBiTree(&p->rchild);
+		return 1;
+	}
+	return 0; // p空 
+}
+
+// 算法6.1，有改动 P129
+// 先序递归遍历T,对每个结点调用函数Visit一次且仅一次
+void PreOrderTraverse(BiTree T,int(*Visit)(TElemType))
+{
+	if(T) // T不空 
+	{
+		Visit(T->data); // 先访问根结点 
+		PreOrderTraverse(T->lchild,Visit); // 再先序遍历左子树 
+		PreOrderTraverse(T->rchild,Visit); // 最后先序遍历右子树 
+	}
+}
+
+// 中序递归遍历T,对每个结点调用函数Visit一次且仅一次
+void InOrderTraverse(BiTree T,int(*Visit)(TElemType))
+{
+	if(T)
+	{
+		InOrderTraverse(T->lchild,Visit); // 先中序遍历左子树 
+		Visit(T->data); // 再访问根结点 
+		InOrderTraverse(T->rchild,Visit); // 最后中序遍历右子树 
+	}
+ }
+
+
+
+//	构造一个空栈S。
+int InitStack(SqStack *S)
+{
+	// 为栈底分配一个指定大小的存储空间
+	(*S).base = (SElemType *)malloc(STACK_INIT_SIZE*sizeof(SElemType));
+	if( !(*S).base )
+		exit(0);		// 存储分配失败 
+	(*S).top = (*S).base;	// 栈底与栈顶相同表示一个空栈
+	(*S).stacksize = STACK_INIT_SIZE;
+	return 1;
+}
+
+// 若栈S为空栈（栈顶与栈底相同的），则返回1，否则返回0。
+int StackEmpty(SqStack S)
+{
+	if(S.top == S.base)
+		return 1;
+	else
+		return 0;
+}
+
+//	若栈不空，则用e返回S的栈顶元素，并返回1；否则返回0。
+int GetTop(SqStack S,SElemType *e)
+{
+	if(S.top > S.base)
+	{
+		*e = *(S.top-1);	// 栈顶指针的下一个位置为栈顶元素
+		return 1;
+	}
+	else
+		return 0;
+}
+
+//	插入元素e为新的栈顶元素。
+int Push(SqStack *S, SElemType e)
+{
+	if((*S).top - (*S).base >= (*S).stacksize)	// 栈满，追加存储空间 
+	{
+		(*S).base = (SElemType *)realloc((*S).base, 
+			((*S).stacksize + STACKINCREMENT) * sizeof(SElemType));
+		if( !(*S).base )
+			exit(0); // 存储分配失败 
+		(*S).top = (*S).base+(*S).stacksize;
+		(*S).stacksize += STACKINCREMENT;
+	}
+	*((*S).top)++=e;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	return 1;
+}
+
+//	若栈不空，则删除S的栈顶元素，用e返回其值，并返回1；否则返回0。
+int Pop(SqStack *S,SElemType *e)
+{
+	if((*S).top == (*S).base)
+		return 0;
+	*e = *--(*S).top;
+	// 这个等式的++ * 优先级相同，但是它们的运算方式，是自右向左
+	return 1;
+}
+
+// 算法6.3 P131
+// 采用二叉链表存储结构，Visit是对数据元素操作的应用函数。 
+// 中序遍历二叉树T的非递归算法(利用栈)，对每个数据元素调用函数Visit 
+int InOrderTraverse1(BiTree T,int(*Visit)(TElemType))
+{ 
+	SqStack S;
+	InitStack(&S);
+	while(T||!StackEmpty(S))
+	{
+		if(T)
+		{ // 根指针进栈,遍历左子树 
+			Push(&S,T);
+			T=T->lchild;
+		}
+		else
+		{ // 根指针退栈,访问根结点,遍历右子树 
+			Pop(&S,&T);
+			if(!Visit(T->data))
+				return 0;
+			T=T->rchild;
+		}
+	}
+	printf("\n");
+	return 1;
+}
+
+// 算法6.2 P131
+// 采用二叉链表存储结构，Visit是对数据元素操作的应用函数。 
+// 中序遍历二叉树T的非递归算法(利用栈)，对每个数据元素调用函数Visit 
+int InOrderTraverse2(BiTree T,int(*Visit)(TElemType))
+{
+	SqStack S;
+	BiTree p;
+	InitStack(&S);
+	Push(&S,T); // 根指针进栈 
+	while(!StackEmpty(S))
+	{
+		while(GetTop(S,&p)&&p)
+			Push(&S,p->lchild); // 向左走到尽头 
+		Pop(&S,&p); // 空指针退栈 
+		if(!StackEmpty(S))
+		{ // 访问结点,向右一步 
+			Pop(&S,&p);
+			if(!Visit(p->data))
+				return 0;
+			Push(&S,p->rchild);
+		}
+	}
+	printf("\n");
+	return 1;
+}
+
+// 后序递归遍历T,对每个结点调用函数Visit一次且仅一次 
+void PostOrderTraverse(BiTree T,int(*Visit)(TElemType))
+{ 
+	if(T) // T不空 
+	{
+		PostOrderTraverse(T->lchild,Visit); // 先后序遍历左子树 
+		PostOrderTraverse(T->rchild,Visit); // 再后序遍历右子树 
+		Visit(T->data); // 最后访问根结点 
+	}
+}
+
+// 层序递归遍历T(利用队列),对每个结点调用函数Visit一次且仅一次
+void LevelOrderTraverse(BiTree T,int(*Visit)(TElemType))
+{  
+	LinkQueue q;
+	QElemType a;
+	if(T)
+	{
+		InitQueue(&q);
+		EnQueue(&q,T);
+		while(!QueueEmpty(q))
+		{
+			DeQueue(&q,&a);
+			Visit(a->data);
+			if(a->lchild!=NULL)
+				EnQueue(&q,a->lchild);
+			if(a->rchild!=NULL)
+				EnQueue(&q,a->rchild);
+		}
+		printf("\n");
+	}
+}
+
+
+int visitT(TElemType e)
+{
+	printf("%c ",e);
+	return 1;
+}
+
+int main()
+{
+	int i;
+	BiTree T,p,c;
+	TElemType e1,e2;
+	
+	InitBiTree(&T);
+	printf("构造空二叉树后,树空否？%d(1:是 0:否) 树的深度=%d\n",
+		BiTreeEmpty(T), BiTreeDepth(T));
+	e1 = Root(T);
+	if(e1!=Nil)
+		printf("二叉树的根为: %c\n",e1);
+	else
+		printf("树空，无根\n");
+	printf("请先序输入二叉树(如:ab三个空格表示a为根结点,"
+		"b为左子树的二叉树)\n");
+
+	CreateBiTree(&T);
+	printf("建立二叉树后,树空否？%d(1:是 0:否) 树的深度=%d\n",
+		BiTreeEmpty(T),BiTreeDepth(T));
+	e1=Root(T);
+	if(e1!=Nil)
+		printf("二叉树的根为: %c\n",e1);
+	else
+		printf("树空，无根\n");
+	
+	printf("中序递归遍历二叉树:\n");
+	InOrderTraverse(T,visitT);
+	printf("\n中序非递归遍历二叉树:\n");
+	InOrderTraverse1(T,visitT);
+	printf("中序非递归遍历二叉树(另一种方法):\n");
+	InOrderTraverse2(T,visitT);
+	
+	printf("后序递归遍历二叉树:\n");
+	PostOrderTraverse(T,visitT);
+	
+	printf("\n层序遍历二叉树:\n");
+	LevelOrderTraverse(T,visitT);
+	
+	printf("请输入一个结点的值: ");
+	scanf("%*c%c",&e1);
+	p=Point(T,e1); // p为e1的指针 
+	printf("结点的值为%c\n",Value(p));
+	printf("欲改变此结点的值，请输入新值: ");
+	scanf("%*c%c%*c",&e2);
+	Assign(p,e2);
+	printf("层序遍历二叉树:\n");
+	LevelOrderTraverse(T,visitT);
+	e1=Parent(T,e2);
+	if(e1!=Nil)
+		printf("%c的双亲是%c\n",e2,e1); 
+	else
+		printf("%c没有双亲\n",e2);
+	e1=LeftChild(T,e2);
+	if(e1!=Nil)
+		printf("%c的左孩子是%c\n",e2,e1);
+	else
+		printf("%c没有左孩子\n",e2);
+	e1=RightChild(T,e2);
+	if(e1!=Nil)
+		printf("%c的右孩子是%c\n",e2,e1);
+	else
+		printf("%c没有右孩子\n",e2);
+	e1=LeftSibling(T,e2);
+	if(e1!=Nil)
+		printf("%c的左兄弟是%c\n",e2,e1);
+	else
+		printf("%c没有左兄弟\n",e2);
+	e1=RightSibling(T,e2);
+	if(e1!=Nil)
+		printf("%c的右兄弟是%c\n",e2,e1);
+	else
+		printf("%c没有右兄弟\n",e2);
+	 
+	InitBiTree(&c);
+	printf("构造一个右子树为空的二叉树c:\n");
+	printf("请先序输入二叉树(如:ab三个空格表示a为根结点,"
+		"b为左子树的二叉树)\n");
+	CreateBiTree(&c);
+	
+	printf("先序递归遍历二叉树c:\n");
+	PreOrderTraverse(c,visitT);
+	
+	printf("\n树c插到树T中,请输入树T中树c的双亲结点 c为左(0)"
+		"或右(1)子树: ");
+	scanf("%*c%c%d",&e1,&i);
+	p=Point(T,e1); // p是T中树c的双亲结点指针 
+	InsertChild(p,i,c);
+	
+	printf("先序递归遍历二叉树:\n");
+	PreOrderTraverse(T,visitT);
+	printf("\n删除子树,请输入待删除子树的双亲结点  左(0)或右(1)子树: ");
+	scanf("%*c%c%d",&e1,&i);
+	p=Point(T,e1);
+	DeleteChild(p,i);
+	printf("先序递归遍历二叉树:\n");
+	PreOrderTraverse(T,visitT);
+	printf("\n");
+	DestroyBiTree(&T);
+	
+	system("pause");
+	return 0; 
+}
+/*
+输出效果：
+
+构造空二叉树后,树空否？1(1:是 0:否) 树的深度=0
+树空，无根
+请先序输入二叉树(如:ab三个空格表示a为根结点,b为左子树的二叉树)
+ab
+建立二叉树后,树空否？0(1:是 0:否) 树的深度=2
+二叉树的根为: a
+中序递归遍历二叉树:
+b a
+中序非递归遍历二叉树:
+b a
+中序非递归遍历二叉树(另一种方法):
+b a
+后序递归遍历二叉树:
+b a
+层序遍历二叉树:
+a b
+请输入一个结点的值: b
+结点的值为b
+欲改变此结点的值，请输入新值: c
+层序遍历二叉树:
+a c
+c的双亲是a
+c没有左孩子
+c没有右孩子
+c没有左兄弟
+c没有右兄弟
+构造一个右子树为空的二叉树c:
+请先序输入二叉树(如:ab三个空格表示a为根结点,b为左子树的二叉树)
+AB
+先序递归遍历二叉树c:
+A B
+树c插到树T中,请输入树T中树c的双亲结点 c为左(0)或右(1)子树: c 0
+先序递归遍历二叉树:
+a c A B
+删除子树,请输入待删除子树的双亲结点  左(0)或右(1)子树: c 0
+先序递归遍历二叉树:
+a c
+请按任意键继续. . . 
+
+*/

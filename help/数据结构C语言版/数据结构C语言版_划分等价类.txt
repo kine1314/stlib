@@ -1,0 +1,134 @@
+/*
+	数据结构C语言版 划分等价类
+	P141 
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月13日 
+*/
+#include <stdio.h>
+#include <malloc.h>
+
+//--------树的双亲表存储表示----------
+typedef char TElemType;
+#define MAX_TREE_SIZE  100
+
+typedef struct PTNode{	//结点结构
+	TElemType data;	
+	int parent;		//双亲位置域
+}PTNode;
+
+typedef struct {	//树的结构
+	PTNode nodes[MAX_TREE_SIZE];
+	int r;	//根的位置
+	int n;	//结点数
+}PTree;
+typedef PTree MFSet;
+
+
+int CreatPTree(PTree *T)
+{
+	int i;
+
+	printf("请输入元素数目:\n");
+	scanf("%d",&T->n);
+	fflush(stdin);
+	for(i=0;i<T->n;i++){
+		printf("输入树的第%d个元素和双亲的位置:(空格隔开)\n",i);
+		scanf("%c%d",&T->nodes[i].data,&T->nodes[i].parent);
+		fflush(stdin);
+	}
+	T->r=0;
+	return 1;
+}
+
+// 算法6.8 P141 
+// 找集合S中i所在子集的根
+int find_mfset(MFSet S, int i) 
+{   
+	int j;
+	if (i<0 || i>S.n) 
+		return -1;   // i不是S中任一子集的成员
+	if (i==0)  
+		printf("\t%d(%c%3d)\n",i,S.nodes[0].data,S.nodes[0].parent);
+	for (j=i; S.nodes[j].parent>=0; j=S.nodes[j].parent)
+		printf("\t%d(%c%3d)\n",j,S.nodes[j].data,S.nodes[j].parent);
+	return 1;
+}
+
+// 算法6.9 P141
+// S.nodes[i]和S.nodes[j]分别为S中两个互不相交的子集Si和Sj的根结点。
+// 求并集Si∪Sj。
+int merge_mfset(MFSet *S, int i, int j) 
+{
+	if (i<0 || i>S->n || j<0 || j>S->n) 
+		return 0;
+	S->nodes[i].parent = j;
+	return 1;
+}
+
+// 算法6.10 P142
+// S.nodes[i]和S.nodes[j]分别为S中两个互不相交的子集Si和Sj的根结点
+// 求并集Si∪Sj。
+int mix_mfset(MFSet *S, int i, int j) 
+{ 
+	if (i<0 || i>S->n || j<0 || j>S->n)  
+		return 0;
+	if (S->nodes[i].parent>S->nodes[j].parent) {   // Si所含成员数比Sj少
+		S->nodes[j].parent+=S->nodes[i].parent;
+		S->nodes[i].parent=j;
+	} 
+	else {	// Sj的元素比Si少
+		S->nodes[i].parent+=S->nodes[j].parent;
+		S->nodes[j].parent=i;
+	}
+	return 1;
+}
+
+// 算法6.11 P143
+// 确定i所在子集，并将从i至根路径上所有结点都变成根的孩子结点。
+int fix_mfset(MFSet *S, int i) 
+{
+	int j,k,t;
+	
+	if (i<1 || i>S->n) 
+		return -1;       // i 不是S中任一子集的成员
+	for (j=i; S->nodes[j].parent>=0; j=S->nodes[j].parent) 
+		printf("\t%d(%c%3d)\n", j, S->nodes[j].data, S->nodes[j].parent);
+	for (k=i; k!=j; k=t) {
+		t=S->nodes[k].parent;  
+		S->nodes[k].parent=j;
+	}
+	return 1;
+}
+
+int main()
+{
+	int i,j;
+	PTree T;
+
+	//创建树
+	CreatPTree(&T);
+
+	// 找集合S中i所在子集的根
+	printf("输入元素：\n");
+	scanf("%d",&i);
+	find_mfset(T,i);
+
+	//求并集Si∪Sj
+	printf("输入两个集合的头节点(space)\n");
+	scanf("%d%d",&i,&j);
+	if( merge_mfset(&T,i,j) == -1)
+		printf("没找到");
+
+	//求并集Si∪Sj
+	printf("input two element number:(space)\n");
+	scanf("%d%d",&i,&j);
+	mix_mfset(&T,i,j);
+
+	//确定i所在子集，并将从i至根路径上所有结点都变成根的孩子结点。
+	printf("input element number:\n");
+	scanf("%d",&i);
+	fix_mfset(&T,i);
+
+	system("pause");
+	return 0;
+}

@@ -1,0 +1,482 @@
+/*
+	数据结构C语言版 广义表的扩展性链表存储表示和实现
+	P110
+	编译环境：Dev-C++ 4.9.9.2
+	日期：2011年2月13日
+*/
+
+#include <stdio.h>
+#include <malloc.h>
+
+typedef char AtomType; // 定义原子类型为字符型 
+
+// GList2.h 广义表的扩展线性链表存储表示 
+typedef enum{ATOM,LIST}ElemTag; // ATOM==0:原子,LIST==1:子表 
+typedef struct GLNode
+{  
+	ElemTag tag; // 公共部分,用于区分原子结点和表结点    
+	union // 原子结点和表结点的联合部分 
+	{
+		AtomType atom;	// 原子结点的值域 
+		struct GLNode *hp;	// 表结点的表头指针 
+	}a;
+	struct GLNode *tp; // 相当于线性链表的next,指向下一个元素结点 
+}*GList,GLNode; // 广义表类型GList是一种扩展的线性链表 
+
+typedef struct
+{
+	char *ch;	// 若是非空串,则按串长分配存储区,否则ch为NULL 
+	int length; // 串长度 
+}HString;
+
+
+// 初始化(产生空串)字符串T
+void InitString(HString *T)
+{
+	(*T).length=0;
+	(*T).ch=NULL;
+}
+
+// 生成一个其值等于串常量chars的串T 
+int StrAssign(HString *T, char *chars)
+{
+	int i,j;
+	if((*T).ch)
+		free((*T).ch); // 释放T原有空间 
+	i = strlen(chars); // 求chars的长度i 
+	if(!i)
+	{ 
+		// chars的长度为0 
+		(*T).ch = NULL;
+		(*T).length = 0;
+	}
+	else
+	{
+		// chars的长度不为0 
+		(*T).ch = (char*)malloc(i*sizeof(char)); // 分配串空间 
+		if(!(*T).ch) // 分配串空间失败 
+			exit(0);
+		for(j = 0; j < i; j++) // 拷贝串 
+			(*T).ch[j] = chars[j];
+		(*T).length = i;
+	}
+	return 1;
+}
+
+// 由串S复制得串T
+int StrCopy(HString *T,HString S)
+{
+	int i;   
+	if((*T).ch)
+		free((*T).ch); // 释放T原有空间 
+	(*T).ch=(char*)malloc(S.length*sizeof(char)); // 分配串空间 
+	if(!(*T).ch) // 分配串空间失败 
+		exit(0);
+	for(i=0;i<S.length;i++) // 拷贝串 
+		(*T).ch[i]=S.ch[i];
+	(*T).length=S.length;
+	return 1;
+}
+
+// 若S为空串,则返回1,否则返回0 
+int StrEmpty(HString S)
+{
+	if(S.length == 0 && S.ch == NULL)
+		return 1;
+	else
+		return 0;
+}
+
+// 若S>T,则返回值>0;若S=T,则返回值=0;若S<T,则返回值<0
+int StrCompare(HString S,HString T)
+{
+	int i;
+	for(i=0;i<S.length && i<T.length;++i)
+		if(S.ch[i] != T.ch[i])
+			return S.ch[i]-T.ch[i];
+	return S.length-T.length;
+}
+
+// 返回S的元素个数,称为串的长度 
+int StrLength(HString S)
+{
+	return S.length;
+}
+
+// 将S清为空串 
+int ClearString(HString *S)
+{
+	if((*S).ch)
+	{
+		free((*S).ch);
+		(*S).ch=NULL;
+	}
+	(*S).length=0;
+	return 1;
+}
+
+// 用Sub返回串S的第pos个字符起长度为len的子串。
+int SubString(HString *Sub, HString S,int pos,int len)
+{
+	int i;
+	if(pos<1||pos>S.length||len<0||len>S.length-pos+1)
+		return 0;
+	if((*Sub).ch)
+		free((*Sub).ch); // 释放旧空间 
+	if(!len) // 空子串 
+	{
+		(*Sub).ch=NULL;
+		(*Sub).length=0;
+	}
+	else
+	{ // 完整子串 
+		(*Sub).ch=(char*)malloc(len*sizeof(char));
+		if(!(*Sub).ch)
+			exit(0);
+		for(i=0;i<=len-1;i++)
+			(*Sub).ch[i]=S.ch[pos-1+i];
+		(*Sub).length=len;
+	}
+	return 1;
+}
+
+// 创建空的广义表L
+int InitGList(GList *L)
+{  
+	*L=NULL;
+	return 1;
+}
+
+// 将非空串str分割成两部分:hstr为第一个','之前的子串,str为之后的子串 
+int sever(HString *str,HString *hstr)
+{ 
+	int n,i=1,
+		k=0; // k记尚未配对的左括号个数 
+	HString ch,c1,c2,c3;
+	InitString(&ch); // 初始化HString类型的变量 
+	InitString(&c1);
+	InitString(&c2);
+	InitString(&c3);
+	StrAssign(&c1,",");
+	StrAssign(&c2,"(");
+	StrAssign(&c3,")");
+	n=StrLength(*str);
+	do
+	{
+		SubString(&ch,*str,i,1);
+		if(!StrCompare(ch,c2))
+			++k;
+		else if(!StrCompare(ch,c3))
+			--k;
+		++i;
+	}while(i<=n&&StrCompare(ch,c1)||k!=0);
+	if(i<=n)
+	{
+		StrCopy(&ch,*str);
+		SubString(hstr,ch,1,i-2);
+		SubString(str,ch,i,n-i+1);
+	}
+	else
+	{
+		StrCopy(hstr,*str);
+		ClearString(str);
+	}
+	return 1;
+ }
+
+// 由S创建广义表L 
+int CreateGList(GList *L,HString S)
+{ 
+	HString emp,sub,hsub;
+	GList p;
+	
+	InitString(&emp);
+	InitString(&sub);
+	InitString(&hsub);
+	StrAssign(&emp,"()"); // 设emp="()" 
+	*L=(GList)malloc(sizeof(GLNode));
+	if(!*L) // 建表结点不成功 
+		exit(0);
+	if(!StrCompare(S,emp)) // 创建空表 
+	{
+		(*L)->tag=LIST;
+		(*L)->a.hp=NULL;
+		(*L)->tp=NULL;
+	}
+	else if(StrLength(S)==1) // 创建单原子广义表 
+	{
+		(*L)->tag=ATOM;
+		(*L)->a.atom=S.ch[0];
+		(*L)->tp=NULL;
+	}
+	else // 创建一般表 
+	{
+		(*L)->tag=LIST;
+		(*L)->tp=NULL;
+		SubString(&sub,S,2,StrLength(S)-2); // 脱外层括号 
+		sever(&sub,&hsub); // 从sub中分离出表头串hsub 
+		CreateGList(&(*L)->a.hp,hsub);
+		p=(*L)->a.hp;
+		while(!StrEmpty(sub)) // 表尾不空,则重复建n个子表 
+		{
+			sever(&sub,&hsub); // 从sub中分离出表头串hsub 
+			CreateGList(&p->tp,hsub);
+			p=p->tp;
+		};
+	}
+	return 1;
+}
+
+// 销毁广义表L 
+void DestroyGList(GList *L)
+{ 
+	GList ph,pt;
+	
+	if(*L) // L不为空表 
+	{ // 由ph和pt接替L的两个指针 
+		if((*L)->tag) // 是子表 
+			ph=(*L)->a.hp;
+		else // 是原子 
+			ph=NULL;
+		pt=(*L)->tp;
+		free(*L);	// 释放L所指结点 
+		*L=NULL;	// 令L为空 
+		DestroyGList(&ph); // 递归销毁表ph 
+		DestroyGList(&pt); // 递归销毁表pt 
+	}
+}
+
+// 由广义表L复制得到广义表T
+int CopyGList(GList *T,GList L)
+{
+	if(!L) // L空 
+	{
+		*T=NULL;
+		return 1;
+	}
+	*T=(GList)malloc(sizeof(GLNode));
+	if(!*T)
+		exit(0);
+	(*T)->tag=L->tag; // 复制枚举变量 
+	if(L->tag==ATOM) // 复制共用体部分 
+		(*T)->a.atom=L->a.atom; // 复制单原子 
+	else
+		CopyGList(&(*T)->a.hp,L->a.hp); // 复制子表 
+	if(L->tp==NULL) // 到表尾 
+		(*T)->tp=L->tp;
+	else
+		CopyGList(&(*T)->tp,L->tp); // 复制子表 
+	return 1;
+}
+
+// 初求广义表L的长度,即元素个数
+int GListLength(GList L)
+{
+	int len=0;
+	GList p;
+	
+	if(L->tag == LIST && !L->a.hp) // 空表 
+		return 0; // 空表返回0 
+	else if(L->tag==ATOM) // 单原子表 
+		return 1;
+	else // 一般表 
+	{
+		p=L->a.hp;
+		do
+		{
+			len++;
+			p=p->tp;
+		}while(p);
+		return len;
+	}
+ }
+
+// 求广义表L的深度 
+int GListDepth(GList L)
+{ 
+	int max,dep;
+	GList pp;
+	
+	if(L==NULL||L->tag==LIST&&!L->a.hp)
+		return 1; // 空表深度为1 
+	else if(L->tag==ATOM)
+		return 0; // 单原子表深度为0 
+	else // 求一般表的深度 
+		for(max=0,pp=L->a.hp;pp;pp=pp->tp)
+		{
+			dep=GListDepth(pp); // 求以pp为头指针的子表深度 
+			if(dep>max)
+				max=dep;
+		}
+   return max+1; // 非空表的深度是各元素的深度的最大值加1 
+ }
+
+//判定广义表L是否为空 
+int GListEmpty(GList L)
+{ 
+	if(!L||L->tag==LIST&&!L->a.hp)
+		return 1;
+	else
+		return 0;
+}
+
+//  取广义表L的头 
+GList GetHead(GList L)
+{ 
+	GList h;
+	
+	InitGList(&h);
+	if(!L||L->tag==LIST&&!L->a.hp)
+	{
+		printf("\n空表无表头!");
+		exit(0);
+	}
+	h=(GList)malloc(sizeof(GLNode));
+	if(!h)
+		exit(0);
+	h->tag=L->a.hp->tag;
+	h->tp=NULL;
+	if(h->tag==ATOM)
+		h->a.atom=L->a.hp->a.atom;
+	else
+		CopyGList(&h->a.hp,L->a.hp->a.hp);
+	return h;
+}
+
+//  取广义表L的尾 
+GList GetTail(GList L)
+{ 
+	GList T;
+	if(!L)
+	{
+		printf("\n空表无表尾!");
+		exit(0);
+	}
+	T=(GList)malloc(sizeof(GLNode));
+	if(!T)
+		exit(0);
+	T->tag=LIST;
+	T->tp=NULL;
+	CopyGList(&T->a.hp,L->a.hp->tp);
+	return T;
+}
+
+//  插入元素e作为广义表L的第一元素(表头,也可能是子表) 
+int InsertFirst_GL(GList *L,GList e)
+{   
+	GList p=(*L)->a.hp;
+	(*L)->a.hp=e;
+	e->tp=p;
+	return 1;
+}
+
+// 删除广义表L的第一元素,并用e返回其值 
+int DeleteFirst_GL(GList *L,GList *e)
+{ 
+	if(*L)
+	{
+		*e=(*L)->a.hp;
+		(*L)->a.hp=(*e)->tp;
+		(*e)->tp=NULL;
+	}
+	else
+		*e=*L;
+	return 1;
+}
+
+// 利用递归算法遍历广义表L 
+void Traverse_GL(GList L,void(*v)(AtomType))
+{ 
+	GList hp;
+	if(L) // L不空 
+	{
+		if(L->tag==ATOM) // L为单原子 
+		{
+			v(L->a.atom);
+			hp=NULL;
+		}
+		else // L为子表 
+			hp=L->a.hp;
+		Traverse_GL(hp,v);		//遍历表头
+		Traverse_GL(L->tp,v);	//遍历表尾
+	}
+}
+
+
+void visit(AtomType e)
+{
+	printf("%c ", e);
+}
+
+int main()
+{
+	char p[80];
+	GList l,m;
+	HString t;
+	
+	InitString(&t);
+	InitGList(&l);
+	InitGList(&m);
+	printf("空广义表l的深度=%d l是否空？%d(1:是 0:否)\n",
+		GListDepth(l), GListEmpty(l));
+	printf("请输入广义表l(书写形式：空表:(),单原子:a,其它:(a,(b),c):\n");
+	gets(p);
+	StrAssign(&t,p);
+	CreateGList(&l,t);
+	printf("广义表l的长度=%d\n",GListLength(l));
+	printf("广义表l的深度=%d l是否空？%d(1:是 0:否)\n",
+		GListDepth(l), GListEmpty(l));
+	printf("遍历广义表l：\n");
+	Traverse_GL(l,visit);
+	printf("\n复制广义表m=l\n");
+	CopyGList(&m,l);
+	printf("广义表m的长度=%d\n",GListLength(m));
+	printf("广义表m的深度=%d\n",GListDepth(m));
+	printf("遍历广义表m：\n");
+	Traverse_GL(m,visit);
+	DestroyGList(&m);
+	m=GetHead(l);
+	printf("\nm是l的表头，遍历广义表m：\n");
+	Traverse_GL(m,visit);
+	DestroyGList(&m);
+	m=GetTail(l);
+	printf("\nm是l的表尾，遍历广义表m：\n");
+	Traverse_GL(m,visit);
+	InsertFirst_GL(&m,l);
+	printf("\n插入l为m的表头，遍历广义表m：\n");
+	Traverse_GL(m,visit);
+	DeleteFirst_GL(&m,&l);
+	printf("\n删除m的表头，遍历广义表m：\n");
+	Traverse_GL(m,visit);
+	printf("\n");
+	DestroyGList(&m);
+	
+	system("pause");
+	return 0;
+}
+/*
+输出效果：
+
+空广义表l的深度=1 l是否空？1(1:是 0:否)
+请输入广义表l(书写形式：空表:(),单原子:a,其它:(a,(b),c):
+<a,<b>,c>
+广义表l的长度=3
+广义表l的深度=2 l是否空？0(1:是 0:否)
+遍历广义表l：
+a b c
+复制广义表m=l
+广义表m的长度=3
+广义表m的深度=2
+遍历广义表m：
+a b c
+m是l的表头，遍历广义表m：
+a
+m是l的表尾，遍历广义表m：
+b c
+插入l为m的表头，遍历广义表m：
+a b c b c
+删除m的表头，遍历广义表m：
+b c
+请按任意键继续. . .
+
+*/
